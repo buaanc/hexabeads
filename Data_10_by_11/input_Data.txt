@@ -1,0 +1,90 @@
+###############################
+##  FEA PARAMETERS           ##
+###############################
+## Total transient analysis time
+#totaltime
+650
+## Time step for implicit scheme
+#timestep
+0.1
+###############################
+##  GENERAL PARAMETERS       ##
+###############################
+## Finite Difference (FD) option: 
+## 1 = perform FD check 
+## 0 = no FD checkc     
+#finitedifference 
+0
+## Yield Stress
+#yieldstress
+0.55
+## Type of Initial Condition for Striker
+## 0 = Initial velocity
+## 1 = Initial force
+#striker
+1
+###############################
+##  OBJECTIVE FUNCTION       ##
+###############################
+#NumberOfObjectiveFunctions
+1
+## Objective goal | objective type
+## Objective goal:
+## Maximize = 1
+## Minimize = 0
+## Objective type:
+## 1 = spring force
+## 2 = energy
+## 3 = normalized energy (wrt input energy)
+#Objective
+1	1
+## Objective function penalty weight
+## 0 = no penalty added to cost function
+## >0 = weight value
+#Weight
+1000
+## Space and Time norm parameter
+#Norm
+16
+###############################
+##  CONSTRAINT FUNCTION      ##
+###############################
+#NumberOfOptimizationConstraints
+0
+##  	1 = volume for one (strong) phase
+## 		2 = SRV (volume constraint also should be imposed when SRV is selected)
+## 		3 = volume for two material phases
+## If DesignVarType == 1 or 2 (see next section)
+##		constraint type 1 and/or 2 only
+## If DesignVarType == 3 (see next section)
+##		constraint type 3 only 
+##		first constraint is for strong material
+##		if desired, second constraint is for the weak material
+## Constraint type | maximum number of intruders | equality tolerance
+## Note: if equality tolerance equals to zero => inequality constraint
+#Constraints
+1	30	0.01
+2	30	0.01
+###############################
+##  DESIGN VARIABLES         ##
+###############################
+## Minimum volume fraction 
+#vfmin
+0.001
+## Penalization factor for the volume fraction (SIMP approach)
+##	p | q
+#simp
+4		4
+###############################
+##  CONVERGENCE PARAMETERS   ##
+###############################
+## KKT error tolerance
+#kkttol
+1e-7
+## Cost function absolute change tolerance
+#costtol
+1e-6
+## Design variable absolute change tolerance
+#designtol
+1e-6
+###############################

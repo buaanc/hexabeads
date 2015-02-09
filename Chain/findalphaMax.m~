@@ -1,0 +1,22 @@
+function alphaMax = findalphaMax(alphaP,alphaY,c1,c2,c3,c4)
+
+error = 1;
+tol = 1e-8;
+
+%Initial estimation
+alphaMax = alphaP + tol;
+while (error > tol)
+    
+    f_eval = - alphaP + c1*alphaMax - c2*alphaY + c3*alphaY*exp(-c4*(alphaMax/alphaY-1.0));
+    
+    d_f_eval = c1 -c3*c4*exp(-c4*(alphaMax/alphaY-1.0));
+    
+    inc_alphaMax = - f_eval/d_f_eval;
+    
+    alphaMax = alphaMax + inc_alphaMax;
+    
+    error = abs(f_eval);
+end
+
+
+end

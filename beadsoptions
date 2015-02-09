@@ -1,0 +1,37 @@
+# Viewing DM
+-dm_view ::ascii_info_detail
+
+# SNES, KSP, and PC options
+-snes_view
+-snes_type newtonls
+-snes_atol 1e-8
+-snes_rtol 1e-20
+-snes_linesearch_type basic
+-ksp_type gmres
+-pc_type bjacobi
+-sub_pc_type lu
+-sub_pc_factor_mat_ordering_type qmd
+-analysis 0
+-snes_monitor 
+-ksp_monitor_true_residual 
+-snes_converged_reason 
+-ksp_converged_reason
+-size_data small
+-dynamic 1
+-reltol 1e-8
+-abstol 1e-8
+#-ts_adapt_type none
+-large_deformations 0
+-objfunction 1
+-loading 1
+-matlabhistory 0
+-alphaMaxInit 0.0
+-sensitivities 0
+-initial_design 0.5
+-printdisplacements 0
+-ts_type rk
+#-ts_type euler
+-ts_rk_type 5dp
+-scale_factor 100
+-peak_load 10
+-loadtime 22

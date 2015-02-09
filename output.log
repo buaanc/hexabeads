@@ -1,0 +1,106 @@
+llegamos
+###############################
+##  FEA PARAMETERS           ##
+###############################
+## Total transient analysis time
+#totaltime
+
+## Time step for implicit scheme
+#timestep
+
+###############################
+##  GENERAL PARAMETERS       ##
+###############################
+## Finite Difference (FD) option:
+## 1 = perform FD check
+## 0 = no FD checkc
+#finitedifference
+
+## Yield Stress
+#yieldstress
+
+## Type of Initial Condition for Striker
+## 0 = Initial velocity
+## 1 = Initial force
+#striker
+
+###############################
+##  OBJECTIVE FUNCTION       ##
+###############################
+#NumberOfObjectiveFunctions
+
+## Objective goal | objective type
+## Objective goal:
+## Maximize = 1
+## Minimize = 0
+## Objective type:
+## 1 = spring force
+## 2 = energy
+## 3 = normalized energy (wrt input energy)
+#Objective
+1	1
+## Objective function penalty weight
+## 0 = no penalty added to cost function
+## >0 = weight value
+#Weight
+
+## Space and Time norm parameter
+#Norm
+
+###############################
+##  CONSTRAINT FUNCTION      ##
+###############################
+#NumberOfOptimizationConstraints
+
+##  	1 = volume for one (strong) phase
+## 		2 = SRV (volume constraint also should be imposed when SRV is selected)
+## 		3 = volume for two material phases
+## If DesignVarType == 1 or 2 (see next section)
+##		constraint type 1 and/or 2 only
+## If DesignVarType == 3 (see next section)
+##		constraint type 3 only
+##		first constraint is for strong material
+##		if desired, second constraint is for the weak material
+## Constraint type | maximum number of intruders | equality tolerance
+## Note: if equality tolerance equals to zero => inequality constraint
+#Constraints
+	0.01
+2	30	0.01
+###############################
+##  DESIGN VARIABLES         ##
+###############################
+## Minimum volume fraction
+#vfmin
+
+## Penalization factor for the volume fraction (SIMP approach)
+##	p | q
+#simp
+		1
+###############################
+##  CONVERGENCE PARAMETERS   ##
+###############################
+## KKT error tolerance
+#kkttol
+
+## Cost function absolute change tolerance
+#costtol
+
+## Design variable absolute change tolerance
+#designtol
+
+###############################
+
+terminado
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+Option left: name:-dm_view value: ::ascii_info_detail
+Option left: name:-ksp_type value: gmres
+Option left: name:-pc_type value: bjacobi
+Option left: name:-snes_atol value: 1e-8
+Option left: name:-snes_linesearch_type value: basic
+Option left: name:-snes_monitor (no value)
+Option left: name:-snes_rtol value: 1e-20
+Option left: name:-snes_type value: newtonls
+Option left: name:-snes_view (no value)
+Option left: name:-sub_pc_factor_mat_ordering_type value: qmd
+Option left: name:-sub_pc_type value: lu
