@@ -27,7 +27,7 @@ densities_matrix = [densities(1:end-1); densities(2:end)];
 k1 = mean(densities_matrix,1);
 
 k2 = 4;
-h = 0.01;
+h = 0.1;
 scale_factor = 1;
 
 format long
@@ -525,7 +525,7 @@ end
         gamma_array = zeros(n_elem,N_steps);
         k = N_steps ;
         
-        t = t_total;
+        t = t_total + h;
 
         for k=N_steps:-1:1
             
