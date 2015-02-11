@@ -108,10 +108,12 @@ class ProblemParameters
 //			loadtime = 40;
 //			if (t < loadtime){
 //				//F_value = peak_load/2.0 + (peak_load/2.0)*sin(PI/(loadtime/2.0)*t - PI/2.0);
-//				F_value = 5*t;
+//				F_value = 10*t;
 //			}
+//			else if (t >= loadtime && t < 2*loadtime)
+//				F_value = 800 - 10*t;
 //			else
-//				F_value = 400 - 5*t;
+//				F_value = 0;
 		}
 
 		void problem_info(){

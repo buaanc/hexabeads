@@ -19,13 +19,13 @@
 #include <cassert>
 
 ConstitutiveLaw::ConstitutiveLaw(){
-	 _force_vector = new double[4];
-	 _partial_derivative_U_force_vector = new double[4];
-	 _unit_vector = new double[2];
+	 _force_vector = new PetscScalar[4];
+	 _partial_derivative_U_force_vector = new PetscScalar[4];
+	 _unit_vector = new PetscScalar[2];
 
-	 _partial_derivative_P = new double[2];
+	 _partial_derivative_P = new PetscScalar[2];
 
-	 _internal_partial_derivative_P_bead = new double[4];
+	 _internal_partial_derivative_P_bead = new PetscScalar[4];
 
 	 _partial_derivative_alphaMax_coefficient = 0.0;
 	 _delta = 0.0;
@@ -98,21 +98,23 @@ ConstitutiveLaw::ConstitutiveLaw(){
 	 // Felastic = FMaxElastic*pow(((_delta - _alphaP)/(_alphaMax - _alphaP)),h1);
 	 h1 = 1.35;
 
-	 k2 = 4;
+	 k2 = 4.0;
+
+	 tol = 1e-10;
 
 }
 
 ConstitutiveLaw::ConstitutiveLaw(ProblemParameters * problemdata, DesignParameters * designdata){
-	 _force_vector = new double[4];
-	 _partial_derivative_U_force_vector = new double[4];
-	 _unit_vector = new double[2];
+	 _force_vector = new PetscScalar[4];
+	 _partial_derivative_U_force_vector = new PetscScalar[4];
+	 _unit_vector = new PetscScalar[2];
 	 _delta = 0.0;
 	 _distance = 0.0;
 
 	 _partial_derivative_alphaMax_coefficient = 0.0;
-	 _partial_derivative_P = new double[2];
+	 _partial_derivative_P = new PetscScalar[2];
 
-	 _internal_partial_derivative_P_bead = new double[4];
+	 _internal_partial_derivative_P_bead = new PetscScalar[4];
 
 	 _RStar = 0.0;
 	 _EStar = 0.0;
@@ -181,6 +183,10 @@ ConstitutiveLaw::ConstitutiveLaw(ProblemParameters * problemdata, DesignParamete
 
 	 // Felastic = FMaxElastic*pow(((_delta - _alphaP)/(_alphaMax - _alphaP)),h1);
 	 h1 = 1.35;
+
+	 k2 = 4.0;
+
+	 tol = 1e-10;
 }
 
 ConstitutiveLaw::~ConstitutiveLaw(){
@@ -246,7 +252,7 @@ void ConstitutiveLaw::reset_beads(BeadsData & bead_from, BeadsData & bead_to, Pe
 	}
 }
 
-double * ConstitutiveLaw::force_vector(){
+PetscScalar * ConstitutiveLaw::force_vector(){
 
 	assert(_is_distance_calculated);
 	if (!_is_force_coefficients_calculated){
@@ -272,7 +278,7 @@ double * ConstitutiveLaw::force_vector(){
  *
  * ----------------------------------------------------------
  */
-double * ConstitutiveLaw::partial_derivative_U_force_vector(){
+PetscScalar * ConstitutiveLaw::partial_derivative_U_force_vector(){
 
 	if (!_is_force_coefficients_calculated){
 		// This is the way to call a function pointer
@@ -298,7 +304,7 @@ double * ConstitutiveLaw::partial_derivative_U_force_vector(){
  * ----------------------------------------------------
  */
 
-double * ConstitutiveLaw::internal_force_partial_derivative_P_bead(unsigned int & bead){
+PetscScalar * ConstitutiveLaw::internal_force_partial_derivative_P_bead(unsigned int & bead){
 
 	// Call the partial derivative for each bead
 	(*this.*_partial_derivative_P_function)();
@@ -324,7 +330,7 @@ double * ConstitutiveLaw::internal_force_partial_derivative_P_bead(unsigned int 
 	return _internal_partial_derivative_P_bead;
 }
 
-double * ConstitutiveLaw::partial_derivative_P(){
+PetscScalar * ConstitutiveLaw::partial_derivative_P(){
 
 	// This is the way to call a function pointer
 	(*this.*_partial_derivative_P_function)();
@@ -341,7 +347,7 @@ void ConstitutiveLaw::partial_derivative_P_linear(){
 	arma::colvec dEStar		= arma::zeros<arma::colvec>(2);
 	arma::colvec dalphaY	= arma::zeros<arma::colvec>(2);
 
-	double E_from, E_to;
+	PetscScalar E_from, E_to;
 	E_from = _bead_from->E;
 	E_to = _bead_to->E;
 	if (_bead_from->design == 1){
@@ -385,21 +391,22 @@ void ConstitutiveLaw::partial_derivative_P_dummy_plastic(){
 	_alphaP = _alphaMax*(k2 - k1)/ k2;
 
 
-	double Felastic, FPlastic, tol = 1e-10;
+	PetscReal Felastic, FPlastic;
 
 
-	Felastic = k2*_delta - _alphaMax*(k2 - k1);
+	Felastic = k2*(_delta - _alphaP);
 
 	FPlastic = k1*_delta;
 
 	if (_delta >= _alphaP){
-		if (Felastic >= FPlastic - tol){
-			_partial_derivative_P[0] = _delta *1.0/2.0;
-			_partial_derivative_P[1] = _delta *1.0/2.0;
-		}
-		else {
+		if (Felastic < FPlastic - tol){
 			_partial_derivative_P[0] = _alphaMax *1.0/2.0;
 			_partial_derivative_P[1] = _alphaMax *1.0/2.0;
+
+		}
+		else {
+			_partial_derivative_P[0] = _delta *1.0/2.0;
+			_partial_derivative_P[1] = _delta *1.0/2.0;
 		}
 	}
 	else{
@@ -427,7 +434,7 @@ void ConstitutiveLaw::partial_derivative_P_plastic(){
 	arma::colvec DFMaxElastic	= arma::zeros<arma::colvec>(2);
 	arma::colvec dalphaP		= arma::zeros<arma::colvec>(2);
 
-	double E_from, E_to;
+	PetscScalar E_from, E_to;
 	E_from = _bead_from->E;
 	E_to = _bead_to->E;
 	if (_bead_from->design == 1){
@@ -449,10 +456,10 @@ void ConstitutiveLaw::partial_derivative_P_plastic(){
 
 	dareaY = PI * _RStar * dalphaY;
 
-	double pAlpha, Anorm;
-	double alphaNorm = _alphaMax/_alphaY;
+	PetscScalar pAlpha, Anorm;
+	PetscScalar alphaNorm = _alphaMax/_alphaY;
 
-	double FMaxElastic, Felastic, FPlastic;
+	PetscScalar FMaxElastic, Felastic, FPlastic;
 
 	// _alphaMax refers to the level reached in the previous timestep
 	// if we are still in the elastic regime, alphaMax = 0
@@ -549,7 +556,7 @@ void ConstitutiveLaw::partial_derivative_P_plastic(){
 				FPlastic = pAlpha*Anorm;
 
 				//Yield criteria
-				if (Felastic < FPlastic)
+				if (Felastic < FPlastic - tol)
 				{
 					// We need to get back the _alphaP corresponding to _alphaMax instead of _delta
 					alphaNorm = _alphaMax/_alphaY;
@@ -639,7 +646,7 @@ arma::colvec & ConstitutiveLaw::residual_derivative_alphaMax(){
 	return residual_derivative_alphaMax_vec;
 }
 
-double & ConstitutiveLaw::partial_derivative_alphaMax_force_vector(){
+PetscScalar & ConstitutiveLaw::partial_derivative_alphaMax_force_vector(){
 
 	// This is the way to call a function pointer
 	(*this.*_partial_derivative_alphaMax)();
@@ -665,27 +672,37 @@ void ConstitutiveLaw::partial_derivative_alphaMax_force_vector_dummy_plastic(){
 	_alphaP = _alphaMax*(k2 - k1)/ k2;
 
 
-	double Felastic, FPlastic, tol = 1e-10;
+	PetscReal Felastic, FPlastic;
 
 
-	Felastic = k2*_delta - _alphaMax*(k2 - k1);
+	Felastic = k2*(_delta - _alphaP);
 
 	FPlastic = k1*_delta;
 
 	_partial_derivative_alphaMax_coefficient = 0.0;
 
+//	std::cout<<"Felastic = "<<std::setprecision(10)<<Felastic<<std::endl;
+//
+//	std::cout<<"FPlastic = "<<std::setprecision(10)<<FPlastic<<std::endl;
+//
+//	std::cout<<"_delta = "<<_delta<<std::endl;
+//
+//	std::cout<<"_alphaMax = "<<_alphaMax<<std::endl;
+
 	if (_delta >= _alphaP){
-		if (Felastic >= FPlastic - tol){
-			_partial_derivative_alphaMax_coefficient = 0.0;
+		if (Felastic < FPlastic - tol){
+			_partial_derivative_alphaMax_coefficient = k2*(- (k2 - k1)/ k2);
+
 		}
 		else {
-			_partial_derivative_alphaMax_coefficient = k2*(- (k2 - k1)/ k2);
+			_partial_derivative_alphaMax_coefficient = 0.0;
 		}
 	}
 	else{
 		_partial_derivative_alphaMax_coefficient = 0.0;
 	}
 
+	//std::cout<<"_partial_derivative_alphaMax_coefficient = "<<_partial_derivative_alphaMax_coefficient<<std::endl;
 
 
 }
@@ -696,12 +713,12 @@ void ConstitutiveLaw::partial_derivative_alphaMax_force_vector_plastic(){
 	assert(_problemdata->analysis == 2);
 	assert(_is_alphaMax);
 
-	double pAlpha, Anorm;
-	double alphaNorm = _alphaMax/_alphaY;
+	PetscScalar pAlpha, Anorm;
+	PetscScalar alphaNorm = _alphaMax/_alphaY;
 
-	double DpAlphaDalphaM, DAnormDalphaM, DFmaxElasticDalphaM, DalphaPDalphaM;
+	PetscScalar DpAlphaDalphaM, DAnormDalphaM, DFmaxElasticDalphaM, DalphaPDalphaM;
 
-	double FMaxElastic, Felastic, FPlastic;
+	PetscScalar FMaxElastic, Felastic, FPlastic;
 
 	// _alphaMax refers to the level reached in the previous timestep
 	// if we are still in the elastic regime, alphaMax = 0
@@ -758,7 +775,7 @@ void ConstitutiveLaw::partial_derivative_alphaMax_force_vector_plastic(){
 				FPlastic = pAlpha*Anorm;
 
 				//Yield criteria
-				if (Felastic < FPlastic)
+				if (Felastic < FPlastic - tol)
 				{
 					//std::cout<<"Elastic"<<std::endl;
 					// We need to get back the _alphaP corresponding to _alphaMax instead of _delta
@@ -816,7 +833,7 @@ void ConstitutiveLaw::partial_derivative_alphaMax_force_vector_plastic(){
  *
  * ----------------------------------------------------
  */
-double & ConstitutiveLaw::force_coefficient(){
+PetscScalar & ConstitutiveLaw::force_coefficient(){
 
 
 	if (!_is_force_coefficients_calculated){
@@ -843,22 +860,23 @@ void ConstitutiveLaw::calculate_force_dummy_plastic_coefficients(){
 	_alphaP = _alphaMax*(k2 - k1)/ k2;
 
 
-	double Felastic, FPlastic, tol = 1e-10;
+	PetscReal Felastic, FPlastic;
 
 
-	Felastic = k2*_delta - _alphaMax*(k2 - k1);
+	Felastic = k2*(_delta - _alphaP);
 
 	FPlastic = k1*_delta;
 
 	if (_delta >= _alphaP){
-		if (Felastic >= FPlastic - tol){
+		if (Felastic < FPlastic - tol){
+			_Force = Felastic;
+			_Derivative_Force = k2;
+
+		}
+		else {
 			_Force = FPlastic;
 			_alphaMax = _delta;
 			_Derivative_Force = k1;
-		}
-		else {
-			_Force = Felastic;
-			_Derivative_Force = k2;
 #ifdef DEBUG
 			std::cout<<"AQUI ELASTIC DUMMY"<<std::endl;
 #endif
@@ -875,7 +893,7 @@ void ConstitutiveLaw::calculate_force_linear_coefficients(){
 	assert(_is_delta_calculated);
 	assert(_is_matprop_calculated);
 
-	double ke = 4.0/3.0* _EStar * sqrt(_RStar);
+	PetscScalar ke = 4.0/3.0* _EStar * sqrt(_RStar);
 
 	_Force = ke*_delta;
 
@@ -891,10 +909,10 @@ void ConstitutiveLaw::calculate_force_linear_coefficients(){
 void ConstitutiveLaw::calculate_force_plastic_coefficients(){
 	assert(_is_alphaMax);
 
-	double DP, pAlpha, Anorm, DA;
-	double alphaNorm = _alphaMax/_alphaY;
+	PetscScalar DP, pAlpha, Anorm, DA;
+	PetscScalar alphaNorm = _alphaMax/_alphaY;
 
-	double FMaxElastic, Felastic, FPlastic;
+	PetscScalar FMaxElastic, Felastic, FPlastic;
 
 	// _alphaMax refers to the level reached in the previous timestep
 	// if we are still in the elastic regime, alphaMax = 0
@@ -907,7 +925,7 @@ void ConstitutiveLaw::calculate_force_plastic_coefficients(){
 		if (_delta <= _alphaY && _alphaP == 0.0)
 		{
 
-			double ke = 4.0/3.0* _EStar * sqrt(_RStar);
+			PetscScalar ke = 4.0/3.0* _EStar * sqrt(_RStar);
 
 			_Force = ke*pow(fabs(_delta),1.5);
 
@@ -979,7 +997,7 @@ void ConstitutiveLaw::calculate_force_plastic_coefficients(){
 				FPlastic = pAlpha*Anorm;
 
 				//Yield criteria
-				if (Felastic < FPlastic)
+				if (Felastic < FPlastic - tol)
 				{
 #ifdef DEBUG
 						std::cout<<"AQUI ELASTIC"<<std::endl;
@@ -1172,7 +1190,7 @@ void ConstitutiveLaw::check_jacobian(){
 		 * Call force vector
 		 */
 
-		double * force_vector_fd = force_vector();
+		PetscScalar * force_vector_fd = force_vector();
 
 		jacobian_fd(0) = force_vector_fd[0];
 		jacobian_fd(1) = force_vector_fd[1];
@@ -1194,7 +1212,7 @@ void ConstitutiveLaw::check_jacobian(){
 		calculate_delta();
 
 
-		double * force_vector_fd_dos = force_vector();
+		PetscScalar * force_vector_fd_dos = force_vector();
 
 		jacobian_fd(0) -= force_vector_fd_dos[0];
 		jacobian_fd(1) -= force_vector_fd_dos[1];
@@ -1243,10 +1261,10 @@ void ConstitutiveLaw::state_eq_partial_derivative_alphaMax_plastic(){
 
 	assert(_is_alphaMax);
 
-		double pAlpha, Anorm;
-		double alphaNorm = _alphaMax/_alphaY;
+		PetscScalar pAlpha, Anorm;
+		PetscScalar alphaNorm = _alphaMax/_alphaY;
 
-		double FMaxElastic, Felastic, FPlastic;
+		PetscScalar FMaxElastic, Felastic, FPlastic;
 
 		// _alphaMax refers to the level reached in the previous timestep
 		// if we are still in the elastic regime, alphaMax = 0
@@ -1301,7 +1319,7 @@ void ConstitutiveLaw::state_eq_partial_derivative_alphaMax_plastic(){
 					FPlastic = pAlpha*Anorm;
 
 					//Yield criteria
-					if (Felastic < FPlastic)
+					if (Felastic < FPlastic - tol)
 					{
 						dh_dalphaMax = 1.0;
 					}
@@ -1313,7 +1331,7 @@ void ConstitutiveLaw::state_eq_partial_derivative_alphaMax_plastic(){
 			}
 		}
 		else{
-			dh_dalphaMax = 0.0;
+			dh_dalphaMax = 1.0;
 		}
 }
 
@@ -1336,22 +1354,18 @@ void ConstitutiveLaw::state_eq_partial_derivative_alphaMax_dummy_plastic(){
 	_alphaP = _alphaMax*(k2 - k1)/ k2;
 
 
-	double Felastic, FPlastic, tol = 1e-10;
+	PetscReal Felastic, FPlastic;
 
 
-	Felastic = k2*_delta - _alphaMax*(k2 - k1);
+	Felastic = k2*(_delta - _alphaP);
 
 	FPlastic = k1*_delta;
 
-	if (_delta >= _alphaP){
-		if (Felastic >= FPlastic - tol){
-			dh_dalphaMax = 0.0;
-		}
-		else {
-			dh_dalphaMax = 1.0;
-		}
+	if (Felastic < FPlastic - tol){
+		dh_dalphaMax = 1.0;
+
 	}
-	else{
+	else {
 		dh_dalphaMax = 0.0;
 	}
 }
@@ -1362,10 +1376,10 @@ void ConstitutiveLaw::state_eq_partial_derivative_U_plastic(){
 	assert(_is_alphaMax);
 	assert(_is_distance_calculated);
 
-		double pAlpha, Anorm;
-		double alphaNorm = _alphaMax/_alphaY;
+		PetscScalar pAlpha, Anorm;
+		PetscScalar alphaNorm = _alphaMax/_alphaY;
 
-		double FMaxElastic, Felastic, FPlastic;
+		PetscScalar FMaxElastic, Felastic, FPlastic;
 
 		// _alphaMax refers to the level reached in the previous timestep
 		// if we are still in the elastic regime, alphaMax = 0
@@ -1428,7 +1442,7 @@ void ConstitutiveLaw::state_eq_partial_derivative_U_plastic(){
 					FPlastic = pAlpha*Anorm;
 
 					//Yield criteria
-					if (Felastic < FPlastic)
+					if (Felastic < FPlastic - tol)
 					{
 #ifdef DEBUG
 						std::cout<<"elastic en dh_du"<<std::endl;
@@ -1484,27 +1498,27 @@ void ConstitutiveLaw::state_eq_partial_derivative_U_dummy_plastic(){
 	_alphaP = _alphaMax*(k2 - k1)/ k2;
 
 
-	double Felastic, FPlastic, tol = 1e-10;
+	PetscReal Felastic, FPlastic;
 
 
-	Felastic = k2*_delta - _alphaMax*(k2 - k1);
+	Felastic = k2*(_delta - _alphaP);
 
 	FPlastic = k1*_delta;
 
 	if (_delta >= _alphaP){
-		if (Felastic >= FPlastic - tol){
-			dh_dU(0) = _unit_vector[0];
-			dh_dU(1) = _unit_vector[1];
-
-			dh_dU(2) = -1.0*_unit_vector[0];
-			dh_dU(3) = -1.0*_unit_vector[1];
-		}
-		else {
+		if (Felastic < FPlastic - tol){
 			dh_dU(0) = 0.0;
 			dh_dU(1) = 0.0;
 
 			dh_dU(2) = 0.0;
 			dh_dU(3) = 0.0;
+		}
+		else {
+			dh_dU(0) = _unit_vector[0];
+			dh_dU(1) = _unit_vector[1];
+
+			dh_dU(2) = -1.0*_unit_vector[0];
+			dh_dU(3) = -1.0*_unit_vector[1];
 		}
 	}
 	else{
@@ -1528,7 +1542,7 @@ void ConstitutiveLaw::state_eq_product_alphaMax(const PetscScalar & input, Petsc
 
 }
 
-void ConstitutiveLaw::state_eq_vector_product_U(const double & gamma, arma::colvec & result){
+void ConstitutiveLaw::state_eq_vector_product_U(const PetscScalar & gamma, arma::colvec & result){
 
 	// This is the way to call a function pointer
 	(*this.*_state_eq_partial_derivative_U)();
@@ -1547,7 +1561,7 @@ void ConstitutiveLaw::state_eq_vector_product_U(const double & gamma, arma::colv
  * ----------------------------------------------------
  */
 
-void ConstitutiveLaw::set_alphaMax(const double & alphaMax){
+void ConstitutiveLaw::set_alphaMax(const PetscScalar & alphaMax){
 	_alphaMax = alphaMax;
 	_is_alphaMax = true;
 }
@@ -1584,7 +1598,7 @@ void ConstitutiveLaw::calculate_delta_large_def(){
 
 	_delta = 0.0;
 
-	double inc_X, inc_Y, coord_dist_X, coord_dist_Y;
+	PetscScalar inc_X, inc_Y, coord_dist_X, coord_dist_Y;
 
 	coord_dist_X = -_bead_from->coordx + _bead_to->coordx;
 	coord_dist_Y = -_bead_from->coordy + _bead_to->coordy;
@@ -1600,7 +1614,7 @@ void ConstitutiveLaw::calculate_delta_large_def(){
 }
 
 void ConstitutiveLaw::vector_beads_small_def(){
-	double inc_X, inc_Y;
+	PetscScalar inc_X, inc_Y;
 
 	inc_X = (-_bead_from->coordx + _bead_to->coordx);
 	inc_Y = (-_bead_from->coordy + _bead_to->coordy);
@@ -1615,7 +1629,7 @@ void ConstitutiveLaw::vector_beads_small_def(){
 }
 
 void ConstitutiveLaw::vector_beads_large_def(){
-	double inc_X, inc_Y;
+	PetscScalar inc_X, inc_Y;
 
 	inc_X = (-_bead_from->coordx + _bead_to->coordx) + (-_bead_from->U_i + _bead_to->U_i);
 	inc_Y = (-_bead_from->coordy + _bead_to->coordy) + (-_bead_from->U_j + _bead_to->U_j);
@@ -1632,7 +1646,7 @@ void ConstitutiveLaw::vector_beads_large_def(){
 
 void ConstitutiveLaw::get_material_properties(){
 
-	double E_to, E_from;
+	PetscScalar E_to, E_from;
 
 	if (_bead_to->type==2)	{ //Wall bead
 		_RStar = _bead_from->R;

@@ -1,6 +1,9 @@
 function dummy
 
-n_elem = 3;
+global tol;
+
+tol = 1e-10;
+n_elem = 2;
 initial_design = 0.5;
 
 design_beads = [1:n_elem+1];
@@ -27,7 +30,7 @@ densities_matrix = [densities(1:end-1); densities(2:end)];
 k1 = mean(densities_matrix,1);
 
 k2 = 4;
-h = 0.1;
+h = 0.2;
 scale_factor = 1;
 
 format long
@@ -101,9 +104,9 @@ if fd == 1
     disp('FD               Adjoint                 Direct Diff')
     disp([sensitivity_FD', sensitivity_adjoint, sensitivity_diff] )
 
-    disp('Sensitivity ultimo Comparison')
-    disp('FD               Adjoint                 Direct Diff')
-    disp([sensitivity_FD_ultimo', sensitivity_ultimo_adjoint, sensitivity_ultimo] )
+%     disp('Sensitivity ultimo Comparison')
+%     disp('FD               Adjoint                 Direct Diff')
+%     disp([sensitivity_FD_ultimo', sensitivity_ultimo_adjoint, sensitivity_ultimo] )
 end
 
 %sensitivity_FD_ultimo = (obj_function_ultimo_2 - obj_function_ultimo_3)/(2*dt)
@@ -256,7 +259,7 @@ function [obj_function, obj_function_ultimo, y_history, alphaMaxhistory] = ...
 %     close(writerObj);
     
     for i=1:n_elem
-        plot(delta(i,1:700),force_array(i,1:700))
+        plot(delta(i,1:end),force_array(i,1:end))
         xlabel('delta')
         ylabel('force')
         hold all
@@ -512,7 +515,11 @@ end
         N_steps = length(0:h:t_total);
         
         lambda = zeros(2*n_elem,1);
+        
+        lambda_array = zeros(2*n_elem,N_steps);
         beta = zeros(n_variable,1);
+        
+        beta_array = zeros(n_variable,N_steps);
         gamma = zeros(n_elem,1);
 
         plast_elem = zeros(n_elem,1);
@@ -529,6 +536,10 @@ end
 
         for k=N_steps:-1:1
             
+            
+            if (N_steps - k + 1 == 291)
+                a = 1;
+            end
             t = t - h;
 
             lambda_assembly = zeros(2*n_elem,1);
@@ -635,11 +646,15 @@ end
                 else
                     y_elem = y_history(dof_elements(2,j),k);
                 end
+                if j == 1 && N_steps - k + 1 == 611 
+                    a= 1;
+                end
                 
                 dFdAlphaMax = TangentdAlphaMax(y_elem,alphaMax,k1,k2,mass_array,j);
                 
                 dFdAlphaMax_global = [dFdAlphaMax(1); 0; dFdAlphaMax(2); 0];
                 
+
                 if j ~= n_elem
                     gamma(j) = gamma(j)...
                                     + h * ( dFdAlphaMax_global' * lambda(dof_elements(:,j)));
@@ -681,11 +696,15 @@ end
                 dHdY = 0;
             end
             
-            gamma_array(:,k) = gamma;
+            gamma_array(:,N_steps - k + 1) = gamma;
+            
+            lambda_array(:,N_steps - k + 1) = lambda;
+            
+            beta_array(:,N_steps - k + 1) = beta;
 
-        end    
+        end
         
-        sensitivity = beta;
+    sensitivity = beta;
         
         
         
@@ -702,9 +721,10 @@ end
         
         PlasticForce = k1_elem*delta;
 
+        tol = 1e-10;
         if delta >= alphaP
             
-            if ElasticForce < PlasticForce
+            if ElasticForce < PlasticForce - tol
                 dFdY = k2;       
             else
                dFdY = k1_elem;
@@ -731,10 +751,9 @@ end
         
         PlasticForce = k1_elem*delta;
         
-        tol = 1e-12;
         if delta >= alphaP
             
-            if ElasticForce < PlasticForce
+            if ElasticForce < PlasticForce - tol
                 dFdAlphaMax = k2*(- (k2 - k1_elem)/ k2);             
             else
                 dFdAlphaMax = 0;
@@ -773,7 +792,7 @@ end
         
         if design_array(j) && j == variable
             if delta >= alphaP
-                if ElasticForce < PlasticForce
+                if ElasticForce < PlasticForce - tol
                    F = ElasticForce;
                    dFdP = alphaMax*1/2;  
                 else
@@ -795,7 +814,7 @@ end
         if design_array(j+1) && j + 1 == variable
         
             if delta >= alphaP
-                if ElasticForce < PlasticForce
+                if ElasticForce < PlasticForce - tol
                    F = ElasticForce;
                    dFdP = alphaMax*1/2;  
                 else
@@ -888,9 +907,9 @@ end
         
         
         if t < 40
-           ext_force = 5*t;
+           ext_force = 10*t;
         elseif t >= 40 && t < 80
-           ext_force = 400 -t*5;
+           ext_force = 800 -t*10;
         else 
            ext_force = 0;
         end
@@ -909,7 +928,7 @@ end
 
             PlasticForce = k1*delta;
 
-            if ElasticForce < PlasticForce
+            if ElasticForce < PlasticForce - tol
                int_force = ElasticForce; 
                plast = 0;
             else

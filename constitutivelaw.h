@@ -21,9 +21,9 @@ class ConstitutiveLaw
 		ConstitutiveLaw(ProblemParameters * problemdata, DesignParameters * designdata);
 		~ConstitutiveLaw();
 
-		double * force_vector();
+		PetscReal * force_vector();
 
-		double & force_coefficient();
+		PetscReal & force_coefficient();
 
 		void calculate_delta();
 
@@ -38,7 +38,7 @@ class ConstitutiveLaw
 
 		void reset_beads(BeadsData & bead_to, BeadsData & bead_from, PetscInt & analysis,
 				PetscScalar & U_i_from, PetscScalar & U_j_from, PetscScalar & U_i_to, PetscScalar & U_j_to);
-		void set_alphaMax(const double & alphaMax);
+		void set_alphaMax(const PetscReal & alphaMax);
 
 		void set_data(ProblemParameters * problemdata, DesignParameters * designdata){
 			_problemdata = problemdata;
@@ -67,9 +67,9 @@ class ConstitutiveLaw
 		 * ----------------------------------------------------
 		 */
 
-		double & get_alphaMax(){ return _alphaMax;}
+		PetscReal & get_alphaMax(){ return _alphaMax;}
 
-		double & get_delta(){ return _delta;}
+		PetscReal & get_delta(){ return _delta;}
 
 
 
@@ -89,7 +89,7 @@ class ConstitutiveLaw
 
 		void state_eq_product_alphaMax(const PetscScalar & input, PetscScalar & result);
 
-		void state_eq_vector_product_U(const double & gamma, arma::colvec & result);
+		void state_eq_vector_product_U(const PetscReal & gamma, arma::colvec & result);
 
 		void jacobian_alphaMax_vector_product(arma::colvec & vector, PetscScalar & result);
 
@@ -107,16 +107,16 @@ class ConstitutiveLaw
 		 */
 
 
-		double * partial_derivative_U_force_vector();
+		PetscReal * partial_derivative_U_force_vector();
 
-		double * partial_derivative_P();
+		PetscReal * partial_derivative_P();
 
-		double & partial_derivative_alphaMax_force_vector();
+		PetscReal & partial_derivative_alphaMax_force_vector();
 
 		arma::colvec & residual_derivative_alphaMax();
 
 
-		double * internal_force_partial_derivative_P_bead(unsigned int & bead);
+		PetscReal * internal_force_partial_derivative_P_bead(unsigned int & bead);
 
 
 
@@ -268,7 +268,7 @@ class ConstitutiveLaw
 
 
 
-		double dh_dalphaMax;
+		PetscReal dh_dalphaMax;
 		arma::colvec dh_dU;
 
 
@@ -277,11 +277,13 @@ class ConstitutiveLaw
 		BeadsData * _bead_to, * _bead_from;
 
 
-		double * _force_vector, * _unit_vector, *_partial_derivative_U_force_vector, * _partial_derivative_P , * _internal_partial_derivative_P_bead;
+		PetscReal * _force_vector, * _unit_vector, *_partial_derivative_U_force_vector, * _partial_derivative_P , * _internal_partial_derivative_P_bead;
 
-		double _partial_derivative_alphaMax_coefficient;
+		PetscReal _partial_derivative_alphaMax_coefficient;
 
-		double _distance, _delta, _RStar, _EStar, _Force,_Derivative_Force;
+		PetscReal _distance, _RStar, _EStar, _Force,_Derivative_Force;
+
+		PetscReal _delta;
 
 		arma::mat  _jacobian, A;
 
@@ -293,26 +295,26 @@ class ConstitutiveLaw
 
 		// Parameters for the plastic evaluation
 		bool _plastic;
-		double _alphaY, _AreaY;
+		PetscReal _alphaY, _AreaY;
 
 		// Plastic state variable. It needs to be set before evaluation
-		double _alphaMax, _alphaP;
+		PetscReal _alphaMax, _alphaP;
 		bool _is_alphaMax;
 
 		// Constants for the plastic evaluation
 		// 	alphaP = c1*delta - c2*alphaY + c3*alphaY*exp(-c4*(delta/alphaY-1.0));
-		double c1, c2, c3, c4;
-		double d1, d2, d3;
-		double e1;
-		double f1, f2;
-		double g1;
-		double h1;
+		PetscReal c1, c2, c3, c4;
+		PetscReal d1, d2, d3;
+		PetscReal e1;
+		PetscReal f1, f2;
+		PetscReal g1;
+		PetscReal h1;
 
 
 		/*
 		 * Coefficients for the dummy plastic law
 		 */
-		PetscScalar k1, k2;
+		PetscReal k1, k2, tol;
 
 
 
