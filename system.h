@@ -95,12 +95,6 @@ class System
 	PetscErrorCode Solve();
 
 	/*
-	 * Restart the variable history containers
-	 */
-
-	void RestartHistory();
-
-	/*
 	 * Adjoint Solve, it has to be called after: Solve(), CalculateObjFunction() and PartialDerivatives()
 	 */
 	PetscErrorCode AdjointSolve();

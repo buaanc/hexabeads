@@ -1667,11 +1667,12 @@ PetscErrorCode System::AdjointSolve(){
 
 	std::vector<std::vector<Vec> >::reverse_iterator Implicit_Variable_RkStage = U_RungeKuttahistory.rbegin();
 
+#ifdef DEBUG
 	std::cout<<"Size of Timesteps = "<<timeStepHistory.size()<<std::endl;
 	std::cout<<"Size of Time history = "<<timeHistory.size()<<std::endl;
 	std::cout<<"Size of Implicit_Variable history = "<<Uhistory.size()<<std::endl;
 	std::cout<<"Size of alphaMax history = "<<alphaMaxhistory.size()<<std::endl;
-
+#endif
 
 
 	/*
@@ -2797,7 +2798,7 @@ PetscErrorCode System::CheckGradient(){
 		  // We need to correct the id to access the information in the DMNetwork
 		  bead_id += -1 + problemData.N_Elements;
 		  if (bead_id >= vStart && bead_id < vEnd){
-			  std::cout<<"Gradient FD = "<<std::setprecision(10)<<Gradient_FD[i]<<" Gradient = "<<std::setprecision(10)<<muarr[k]<<std::endl;
+			  std::cout<<"Gradient FD ["<<i<<"] = "<<std::setprecision(10)<<Gradient_FD[i]<<" Gradient ["<<i<<"] = "<<std::setprecision(10)<<muarr[k]<<std::endl;
 			  k++;
 		  }
 	  }
@@ -3904,28 +3905,14 @@ PetscErrorCode System::RestartSolver()
 	if (solve_in_fd && problemData.matlabhistory != 1){
 		timeStepHistory_iterator = timeStepHistory.begin();
 	}
+	else{
+		timeStepHistory.clear();
+	}
 
 
 	return ierr;
 }
 
-void System::RestartHistory(){
-
-	TSSetInitialTimeStep(ts,0.0,problemData.timestep);
-
-	this->InitialSolution(networkdm,X);
-	TSSetSolution(ts,X);
-
-
-	timeHistory.clear();
-	timeStepHistory.clear();
-	Uhistory.restart();
-	alphaMaxhistory.restart();
-	U_RungeKuttahistory.restart();
-
-	previous_time = 0.0;
-
-}
 
 PetscErrorCode System::FiniteDifference(){
 	  PetscErrorCode ierr;
