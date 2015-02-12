@@ -147,6 +147,8 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 #ifdef DEBUG
 	std::cout<<"alphaMax RHS = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;
 	std::cout<<"delta RHS = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
+
+	std::cout<<"force coefficient = "<<sistema->elementFunction.force_coefficient()<<std::endl;
 #endif
 
 	farr[offsetfrom] -= force_vector[0];
@@ -218,6 +220,7 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 		farr[offsetfrom + sistema->problemData.striker_DOF - 1] += Fext;
 	}
 
+
 	farr[offsetfrom] *= 1.0/mass;
 	farr[offsetfrom + 1] *= 1.0/mass;
   }
@@ -234,6 +237,11 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   ierr = DMLocalToGlobalBegin(networkdm,localF,ADD_VALUES,F);CHKERRQ(ierr);
   ierr = DMLocalToGlobalEnd(networkdm,localF,ADD_VALUES,F);CHKERRQ(ierr);
   ierr = DMRestoreLocalVector(networkdm,&localF);CHKERRQ(ierr);
+
+#ifdef DEBUG
+  std::cout<<"F"<<std::endl;
+  VecView(F,PETSC_VIEWER_STDOUT_WORLD);
+#endif
 
 
   if (sistema->SaveStages)
@@ -1692,6 +1700,7 @@ PetscErrorCode System::AdjointSolve(){
 	 */
 	ierr = VecSet(Lambda,0.0);
 	ierr = VecSet(Gamma,0.0);
+	ierr = VecSet(Mu,0.0);
 
 	/*
 	 * Parameters indices that belong to this processor
