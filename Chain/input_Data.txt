@@ -3,10 +3,10 @@
 ###############################
 ## Total transient analysis time
 #totaltime
-50
+250
 ## Time step for implicit scheme
 #timestep
-0.1
+0.2
 ###############################
 ##  GENERAL PARAMETERS       ##
 ###############################

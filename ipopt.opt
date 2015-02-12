@@ -1,2 +1,5 @@
 print_info_string yes
-#derivative_test first-order
+derivative_test first-order
+#point_perturbation_radius 0.0
+derivative_test_perturbation 1e-8
+#derivative_test_print_all yes

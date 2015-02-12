@@ -3,7 +3,7 @@
 ###############################
 ## Total transient analysis time
 #totaltime
-200
+300
 ## Time step for implicit scheme
 #timestep
 0.1
@@ -45,12 +45,12 @@
 1000
 ## Space and Time norm parameter
 #Norm
-16
+10
 ###############################
 ##  CONSTRAINT FUNCTION      ##
 ###############################
 #NumberOfOptimizationConstraints
-1
+2
 ##  	1 = volume for one (strong) phase
 ## 		2 = SRV (volume constraint also should be imposed when SRV is selected)
 ## 		3 = volume for two material phases
@@ -64,7 +64,7 @@
 ## Note: if equality tolerance equals to zero => inequality constraint
 #Constraints
 1	1	0.01
-2	1	0
+2	1	0.01
 ###############################
 ##  DESIGN VARIABLES         ##
 ###############################
