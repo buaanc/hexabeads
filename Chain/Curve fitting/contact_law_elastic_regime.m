@@ -1,5 +1,4 @@
-function Force_array = contact_law_elastic_regime(parameters,delta_array,alphaMax_array,...,
-    fitted_param_residual, fitted_param_plastic)
+function Force_array = contact_law_elastic_regime(parameters,delta_array,alphaMax_array,fitted_param_plastic)
 % ----------------- Material parameters -----------------------
 % Young Modulus
 E = 115; %Gpa

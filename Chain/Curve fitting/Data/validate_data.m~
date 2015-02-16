@@ -3,7 +3,7 @@ function [delta, alphaMax, force,...
     alphaMaxUnloading,delta_unloaded,...
     delta_plastic_regime, force_plastic_regime,...
     delta_elastic_regime, force_elastic_regime, alphaMax_elastic_regime,...
-    smoothed_delta, smoothed_force] = reading_data(plotting)
+    smoothed_delta, smoothed_force] = validate_data(plotting,data,j)
 
 % ----------------- Material parameters -----------------------
 % Young Modulus
@@ -30,7 +30,7 @@ sigmayielding = 0.55; %Gpa
 alphaY = (pi/2)^2* (sigmayielding*1.6/EStar)^2 * RStar;
 
 
-M = csvread('Loading-Unloading_to_6kN.csv',1,7,[1 7 11870 8]);    
+M = data;    
 
 if plotting == 1
     plot(M(:,1),M(:,2))
@@ -39,8 +39,10 @@ end
 smooth_parameter = 50;
 yy2 = smooth(M(:,2),smooth_parameter);
 xx2 = smooth(M(:,1),smooth_parameter); 
+
+
 if plotting == 1
-    plot(xx2,yy2, 'r')
+    plot(xx2,yy2, 'r*')
 
     xlabel('Strain')
     ylabel('Force')
@@ -53,6 +55,12 @@ smoothed_force = yy2;
 threshold_parameter = 0;
 % Find local minima for strain
 [strainpks, locstrainpeak] = findpeaks(xx2,'MinPeakDistance',300,'Threshold',threshold_parameter);
+
+if j == 3
+    strainpks = [xx2(1); strainpks];
+    
+    locstrainpeak = [1; locstrainpeak];
+end
 
 %Find local maxima for force
 [forcepks , locforcepeak ] = findpeaks(yy2,'MinPeakDistance',300,'Threshold',threshold_parameter);
@@ -84,11 +92,19 @@ for i=1:1:length(strainpks)
             minimum_values_strain = [minimum_values_strain strainpks(i)];
             minimum_values_strain_indices = [minimum_values_strain_indices locstrainpeak(i)];
         end
+    elseif i == length(strainpks)
+        if strainpks(i) < strainpks(i-1)
+            minimum_values_strain = [minimum_values_strain strainpks(i)];
+            minimum_values_strain_indices = [minimum_values_strain_indices locstrainpeak(i)];        
+        end 
+    elseif i == 1
+        if strainpks(i) < strainpks(i+1)
+            minimum_values_strain = [minimum_values_strain strainpks(i)];
+            minimum_values_strain_indices = [minimum_values_strain_indices locstrainpeak(i)];           
+        end       
     end
 end
-%Add the last minimum
-minimum_values_strain = [minimum_values_strain strainpks(end)];
-minimum_values_strain_indices = [minimum_values_strain_indices locstrainpeak(end)];
+
 
 
 if plotting == 1
@@ -115,6 +131,11 @@ for i=1:1:length(strainpks)
             maximum_values_strain = [maximum_values_strain strainpks(i)];
             maximum_values_strain_indices = [maximum_values_strain_indices locstrainpeak(i)];            
         end 
+    elseif i == 1
+        if strainpks(i) > strainpks(i+1)
+            maximum_values_strain = [maximum_values_strain strainpks(i)];
+            maximum_values_strain_indices = [maximum_values_strain_indices locstrainpeak(i)];               
+        end       
     end
 end
 %Save the values of alphaMax that are kept constant during the
@@ -137,7 +158,12 @@ yield_index_array = zeros(1,length(minimum_values_strain_indices)-1);
 for i=1:1:length(minimum_values_strain_indices)-1
     yield_index = find(xx2(minimum_values_strain_indices(i):1:maximum_values_strain_indices(i+1))...
                         > maximum_values_strain(i));
-    yield_index_array(i) = yield_index(1)+minimum_values_strain_indices(i);
+    if ~isempty(yield_index)
+        yield_index_array(i) = yield_index(1)+minimum_values_strain_indices(i);
+    else
+        % If yield not found
+        yield_index_array(i) = maximum_values_strain_indices(i);
+    end
 
 end
 

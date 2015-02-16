@@ -10,7 +10,7 @@
     delta_plastic_regime, force_plastic_regime, ...
     delta_elastic_regime, force_elastic_regime, alphaMax_elastic_regime,...
     smoothed_delta, smoothed_force]...
-    = reading_data(0);
+    = reading_data(1);
 
 
 % ------------- Fitting parameters plastic regime --------------
@@ -78,8 +78,7 @@ h1 = 1.35;
 Initial_parameters_elastic(5) = h1;
 
 fitting_func_elastic_regime = @(parameters,delta_elastic)...
-                        contact_law_elastic_regime(parameters,delta_elastic,alphaMax_elastic,...,
-                        fitted_param_residual, fitted_param_plastic);
+                        contact_law_elastic_regime(parameters,delta_elastic,alphaMax_elastic,fitted_param_plastic);
 
 opts = optimset('MaxFunEvals',1e7,'MaxIter',1e6,'Display','Iter','PlotFcns',@optimplotx);
 
@@ -90,8 +89,7 @@ x = lsqcurvefit(fitting_func_elastic_regime,Initial_parameters_elastic,...
             
 % Checking the fitting
 
-fitting_force_elastic_regime = contact_law_elastic_regime(x,delta_elastic,alphaMax_elastic,...,
-                        fitted_param_residual, fitted_param_plastic);
+fitting_force_elastic_regime = contact_law_elastic_regime(x,delta_elastic,alphaMax_elastic,fitted_param_plastic);
 figure
 plot(delta_elastic,fitting_force_elastic_regime);
 hold on
@@ -119,4 +117,4 @@ ylabel('Force')
 title('Comparing contact laws after fitting')
 
 
-                
+save('parameters','all_parameters')
