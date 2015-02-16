@@ -103,9 +103,9 @@ class System
 	 * Calculating the RHS parameter derivative for each design variable
 	 * - DF is a vector corresponding to the design variable we're in
 	 */
-	PetscErrorCode RHSParameterDerivatives(PetscReal t, Vec & U, Vec & DF,  PetscInt & DesignBeadNumber, Vec & alphaMax);
+	PetscErrorCode RHSParameterDerivatives(PetscReal & t, Vec & U, Vec & DF,  PetscInt & DesignBeadNumber, Vec & alphaMax);
 
-	PetscErrorCode RHSParameterDerivatives_FD(PetscReal t, Vec & U, Vec & DF, PetscInt & DesignBeadNumber, Vec & alphaMax);
+	PetscErrorCode RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & DF, PetscInt & DesignBeadNumber, Vec & alphaMax);
 
 	/*
 	 * Destructor
@@ -141,6 +141,18 @@ class System
 	PetscErrorCode ProcessObjFunctionTime();
 
 	PetscErrorCode ProcessGradient();
+
+	/*
+	 * Process optimal solution
+	 */
+
+	void ProcessOptimalSolution(){
+		problemData.printdisplacements = 1;
+		designData.printforces = true;
+		problemData.printstephistory = true;
+	}
+
+	PetscErrorCode PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt & ptime);
 
 	/*
 	 * Constraints
@@ -262,7 +274,7 @@ class System
 	/*
 	 * Bogacki–Shampine method parameters
 	 */
-	PetscScalar *c, *b, *a, *ones, *w;
+	PetscScalar *c, *b, *a, *ones;
 
 	/*
 	 * Auxiliar variable for the VecMDot function
@@ -286,7 +298,7 @@ class System
 	PetscInt total_timesteps_matlab;
 
 	bool solve_in_fd;
-	std::vector<PetscReal>::iterator timeStepHistory_iterator;
+	std::vector<PetscReal>::iterator timeStepHistory_iterator , timeStepHistory_iterator_end;
 	PetscScalar previous_time;
 	/*
 	 * bool to check that partial derivatives have been calculated, otherwise

@@ -44,6 +44,9 @@ class DesignParameters
 
 		PetscReal initial_design;
 
+		// Print forces in obj function
+		bool printforces;
+
 
 		double Obj_reltol, KKT_tol, DesVar_reltol;
 		void design_info(){

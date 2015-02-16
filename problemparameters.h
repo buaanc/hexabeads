@@ -45,7 +45,7 @@ class ProblemParameters
 			InitialVelocity = 0.1;
 
 
-
+			printstephistory = false;
 
 
 
@@ -80,6 +80,8 @@ class ProblemParameters
 
 		PetscInt printdisplacements;
 
+		bool printstephistory;
+
 		unsigned int striker_ID, striker_DOF;
 		bool striker;
 
@@ -99,8 +101,8 @@ class ProblemParameters
 		void get_external_force(PetscReal & t, PetscReal & F_value){
 
 			if (t < loadtime){
-				//F_value = peak_load/2.0 + (peak_load/2.0)*sin(PI/(loadtime/2.0)*t - PI/2.0);
-				F_value = peak_load*sin(PI/loadtime * t);
+				F_value = peak_load/2.0 + (peak_load/2.0)*sin(PI/(loadtime/2.0)*t - PI/2.0);
+				//F_value = peak_load*sin(PI/loadtime * t);
 			}
 			else
 				F_value = 0.0;

@@ -37,12 +37,12 @@
 ## 2 = energy
 ## 3 = normalized energy (wrt input energy)
 #Objective
-1	1
+0	1
 ## Objective function penalty weight
 ## 0 = no penalty added to cost function
 ## >0 = weight value
 #Weight
-1000
+0
 ## Space and Time norm parameter
 #Norm
 10

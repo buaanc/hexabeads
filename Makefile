@@ -14,7 +14,7 @@ LDFLAGS = -larmadillo
 CXX = g++
 
 # C++ Compiler options
-CXXFLAGS = -O3 -pipe -pedantic-errors -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long   -DIPOPT_BUILD
+CXXFLAGS = -O3 -pipe -pedantic-errors -Wparentheses -Wreturn-type -Wuninitialized -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long   -DIPOPT_BUILD
 
 ifeq ($(METHOD),debug)
 	CXXFLAGS += -g -DDEBUG

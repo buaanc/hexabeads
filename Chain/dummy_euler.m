@@ -536,10 +536,6 @@ end
 
         for k=N_steps:-1:1
             
-            
-            if (N_steps - k + 1 == 291)
-                a = 1;
-            end
             t = t - h;
 
             lambda_assembly = zeros(2*n_elem,1);

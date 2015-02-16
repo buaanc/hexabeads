@@ -44,6 +44,9 @@ int main(int argc,char ** argv)
 		 */
 		ierr = QuadBeadsDummy.CreatePETScObjects();
 
+
+		QuadBeadsDummy.problemData.printstephistory = true;
+
 		/*
 		 * Set up solver
 		 */

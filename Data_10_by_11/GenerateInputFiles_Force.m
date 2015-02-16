@@ -1,5 +1,4 @@
-clear all
-clc
+function GenerateInputFiles_Force
 
 %Loading parameters
 peak_load = 22.616; %KN High
@@ -16,7 +15,7 @@ nbeadx = 10;
 nbeady = 11;
 alpha = 1.5;
 %Big Beads
-R  = 0.0095;
+R = 4.763e-3;
 E = 115E9;
 rho = 8500;
 nu = 0.3;
@@ -30,7 +29,7 @@ Ewall = 3.1E9;
 rhowall = 1500;
 nuwall = 0.35;
 %Striker
-Rstriker = 0.0095;
+Rstriker = R;
 Estriker = 115E9;
 nustriker = 0.3;
 rhostriker = 8500;
@@ -100,7 +99,7 @@ count = NumberofNodes;
 NumberOfConstraints = 0;
 for i=1:nbeady
     count = count + 1;
-    X(count) = -R;
+    X(count) = -2*R;
     Y(count) = (i-1)*2*R;
     Evec(count) = Ewall;
     nuvec(count) = nuwall;
@@ -129,7 +128,7 @@ NumberofElements = count;
 count = NumberofNodes;
 for i=1:nbeady
     count = count + 1;
-    X(count) = (nbeadx-1)*2*R + R;
+    X(count) = (nbeadx-1)*2*R + 2*R;
     Y(count) = (i-1)*2*R;    
     Evec(count) = Ewall;
     nuvec(count) = nuwall;
@@ -159,7 +158,7 @@ count = NumberofNodes;
 for i=1:nbeadx
     count = count + 1;
     X(count) = (i-1)*2*R;
-    Y(count) = -R;
+    Y(count) = -2*R;
     Evec(count) = Ewall;
     nuvec(count) = nuwall;
     rhovec(count) = rhowall;
@@ -188,7 +187,7 @@ count = NumberofNodes;
 for i=1:nbeadx
     count = count + 1;
     X(count) = (i-1)*2*R;
-    Y(count) = (nbeady-1)*2*R + R;
+    Y(count) = (nbeady-1)*2*R + 2*R;
     Evec(count) = Ewall;
     nuvec(count) = nuwall;
     rhovec(count) = rhowall;
@@ -366,7 +365,7 @@ TargetNodes = [];
 countNodes = 0;
 if (strcmp(goal,'disperse'))
     for i=1:NumberofNodes
-        if (X(i) == W+R & Y(i) >=0 & Y(i)<= H)
+        if (X(i) == W + 2*R & Y(i) >=0 & Y(i)<= H)
            TargetNodes  = [TargetNodes i];
            countNodes = countNodes + 1;
         end
@@ -400,7 +399,7 @@ elseif (strcmp(goal,'focus_asymm'))
     end   
 elseif (strcmp(goal,'focus_symm'))   
      for i=1:NumberofNodes
-        if ((Y(i) ==-R | Y(i) == H+R) & X(i)<=W/2+3*R & X(i)>=W/2-3*R)
+        if ((Y(i) == -2*R | Y(i) == H + 2*R) & X(i)<=W/2+4*R & X(i)>=W/2-4*R)
            TargetNodes  = [TargetNodes i];
            countNodes = countNodes + 1;
         end
@@ -428,3 +427,70 @@ fclose(finE);
 fclose(finC);
 fclose(finI);
 fclose(finA);
+
+
+
+x_coord_min = min(X);
+x_coord_max = max(X);
+
+margin = (x_coord_max - x_coord_min)/10;
+x_coord_min = x_coord_min - margin;
+x_coord_max = x_coord_max + margin;
+
+y_coord_min = min(Y);
+y_coord_max = max(Y);
+
+margin = (y_coord_max - y_coord_min)/10;
+y_coord_min = y_coord_min - margin;
+y_coord_max = y_coord_max + margin;
+
+%[a,b,c] = sphere();
+
+figure
+intruder = 1;
+for k=1:NumberofNodes
+    
+    color_energy_bead = [0,0,1];
+    circlehollow(X(k),Y(k),Rvec(k),color_energy_bead)
+    
+    if (design(k) == 1)
+        text(X(k),Y(k),num2str(intruder));
+        intruder = intruder + 1;
+    end
+    axis([x_coord_min x_coord_max y_coord_min y_coord_max])
+    hold on
+end
+
+
+
+function circlehollow(x,y,r,color_energy_bead)
+%x and y are the coordinates of the center of the circle
+%r is the radius of the circle
+%0.01 is the angle step, bigger values will draw the circle faster but
+%you might notice imperfections (not very smooth)
+% ang=0:0.01:2*pi; 
+% xp=r*cos(ang);
+% yp=r*sin(ang);
+% plot(x+xp,y+yp);
+%[a,b,c] = sphere();
+if r>0
+    if ~all(color_energy_bead == 1)
+        rectangle('Position',[x-r, y-r, 2*r, 2*r],...
+           'Curvature',[1,1],...
+           'LineStyle','-');
+        daspect([1 1 1])
+    end
+%    if ~all(color_energy_bead == 1)
+%        s2 = surf( r*a + x, r*b + y, r*c );
+%        
+%        set(s2,'FaceColor',color_energy_bead,'Edgecolor','none','FaceLighting','phong')
+%        light('Position',[1 0 0],'Style','infinite');
+%         %colormap(cool(100))
+%         %lighting phong; 
+%        daspect([1 1 1])
+%    end
+end
+
+end
+
+end
