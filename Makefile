@@ -19,7 +19,7 @@ CXXFLAGS = -O3 -pipe -pedantic-errors -Wparentheses -Wreturn-type -Wuninitialize
 ifeq ($(METHOD),debug)
 	CXXFLAGS += -g -DDEBUG
 else
-	CXXFLAGS += -DNDEBUG -DNPETSC_USE_LOG
+	CXXFLAGS += -DNDEBUG -DNPETSC_USE_LOG 
 	PETSC_ARCH := linux-mpich-opt
 endif
 

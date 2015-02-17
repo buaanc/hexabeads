@@ -42,7 +42,7 @@
 ## 0 = no penalty added to cost function
 ## >0 = weight value
 #Weight
-0
+1000
 ## Space and Time norm parameter
 #Norm
 10
