@@ -27,7 +27,7 @@
 ##  OBJECTIVE FUNCTION       ##
 ###############################
 #NumberOfObjectiveFunctions
-1
+2
 ## Objective goal | objective type
 ## Objective goal:
 ## Maximize = 1
@@ -37,7 +37,8 @@
 ## 2 = energy
 ## 3 = normalized energy (wrt input energy)
 #Objective
-0	1
+1	1
+1	1
 ## Objective function penalty weight
 ## 0 = no penalty added to cost function
 ## >0 = weight value
@@ -45,7 +46,7 @@
 0
 ## Space and Time norm parameter
 #Norm
-1
+14
 ###############################
 ##  CONSTRAINT FUNCTION      ##
 ###############################

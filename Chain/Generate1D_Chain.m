@@ -2,7 +2,7 @@ clear all
 clc
 
 
-N_beads = 3;
+N_beads = 4;
 
 dynamic = 1;
 

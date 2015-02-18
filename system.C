@@ -568,6 +568,10 @@ System::~System()
 	VecDestroy(&dFdU);
 	VecDestroy(&dFdP);
 
+	VecDestroy(&dFdalphaMax_partial);
+	VecDestroy(&dFdU_partial);
+	VecDestroy(&dFdP_partial);
+
 
 	VecDestroyVecs(Stages,&Phi);
 	VecDestroyVecs(Stages,&K_RK);
@@ -628,7 +632,6 @@ PetscErrorCode System::InitializeData()
 
 	  problemData.peak_load = 22;
 	  problemData.loadtime =10;
-	  ierr =PetscOptionsReal("-scale_factor", "Introduce scale factor for the objective function","", 1, &scale_factor, NULL);
 	  ierr =PetscOptionsReal("-peak_load", "Introduce peak load value in KN","", 22, &problemData.peak_load, NULL);
 	  ierr =PetscOptionsReal("-loadtime", "Introduce load time in ms","", 10, &problemData.loadtime, NULL);
 
@@ -668,8 +671,6 @@ PetscErrorCode System::InitializeData()
 
 	  }
 
-
-	  partialF_partialP.resize(designData.N_DesignVariables);
 
 
 	  /*
@@ -765,7 +766,7 @@ PetscErrorCode System::SetUpDMNetwork()
 	  PetscInt eStart, eEnd;
 	  ierr = DMNetworkGetEdgeRange(networkdm,&eStart,&eEnd);CHKERRQ(ierr);
 	  if (eStart == 0){ // Conditional so we only add the new DOF in the processor where the first element is
-		  unsigned int N = designData.N_ObjFunc;
+		  PetscInt N = designData.N_ObjFunc;
 		  ierr = DMNetworkAddNumVariables(networkdm,eStart,N);CHKERRQ(ierr);
 	  }
 
@@ -913,7 +914,10 @@ PetscErrorCode System::CreatePETScObjects()
 	VecDuplicateVecs(alphaMax, Stages, &W_i);
 
 	VecDuplicate(X,&dFdU);
+	VecDuplicate(X,&dFdU_partial);
+
 	VecDuplicate(alphaMax,&dFdalphaMax);
+	VecDuplicate(alphaMax,&dFdalphaMax_partial);
 
 	VecCreate(PETSC_COMM_WORLD,&Mu);
 	VecSetType(Mu,VECMPI);
@@ -921,6 +925,7 @@ PetscErrorCode System::CreatePETScObjects()
 	VecDuplicateVecs(Mu,Stages,&V_i);
 
 	VecDuplicate(Mu,&dFdP);
+	VecDuplicate(Mu,&dFdP_partial);
 
 	/*
 	 * Number of parameters in this processor
@@ -1901,20 +1906,38 @@ PetscErrorCode System::AdjointSolve(){
 			 * Call partial derivatives of the objective function
 			 */
 
-			VecSet(Omega,0.0);
-			EvaluatePartialImplicitDerivatives(U_RK_Stage,*alphaMaxVec);
-			EvaluatePartialExplicitDerivatives(U_RK_Stage,*alphaMaxVec);
+			VecSet(dFdU,0.0);
+			VecSet(dFdalphaMax,0.0);
+			VecSet(dFdP,0.0);
+
+			for (PetscInt NumbObjFunction = 0; NumbObjFunction < designData.N_ObjFunc; NumbObjFunction++){
+				EvaluatePartialImplicitDerivatives(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+				EvaluatePartialExplicitDerivatives(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+
+				/*
+				 * Check FD for the Partial derivatives
+				 */
+				  if (problemData.finiteDifference){
+					  std::cout<<"Function # "<<NumbObjFunction<<std::endl;
+					  FD_variables(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+					  FD_statevariables(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+					  FD_parameter(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+				  }
+
+				  /*
+				   * Add the contribution of this objective function
+				   */
+
+				  VecAXPY(dFdU, CapitalOmega[NumbObjFunction], dFdU_partial);
+				  VecAXPY(dFdalphaMax, CapitalOmega[NumbObjFunction], dFdalphaMax_partial);
+				  VecAXPY(dFdP, CapitalOmega[NumbObjFunction], dFdP_partial);
+			}
+
 			/*
 			 * For each stage, calculate the contribution of the RHS derivative
 			 */
 			PetscScalar time_RK = *CurrentTime + h*c[i];
 
-
-			if (time_RK > 0)
-				PetscScalar a = 1;
-
-			if (*CurrentTime > 0)
-				PetscScalar b = 1;
 
 			for (PetscInt design_number = 0; design_number<local_N_parameters; design_number++){
 				RHSParameterDerivatives(time_RK,U_RK_Stage,JACP[design_number],design_beads[design_number],*alphaMaxVec);
@@ -1923,16 +1946,8 @@ PetscErrorCode System::AdjointSolve(){
 				}
 			}
 
-			/*
-			 * Check FD for the Partial derivatives
-			 */
-			  if (problemData.finiteDifference){
-				  PetscInt NumbObjFunction = 1;
-				  FD_variables(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
-				  FD_statevariables(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
-				  FD_parameter(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
-			  }
 
+			VecSet(Omega,0.0);
 
 			if (i < (int)Stages - 2){
 				for (unsigned int j=i + 1; j<Stages - 1; j++){
@@ -2075,9 +2090,10 @@ PetscErrorCode System::AdjointSolve(){
 
 				this->elementFunction.calculate_delta();
 
-				PetscReal delta_adjoint = elementFunction.get_delta();
+
 
 #ifdef DEBUG
+//				PetscReal delta_adjoint = elementFunction.get_delta();
 //				std::cout<<"alphaMax en adjoint = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
 //				std::cout<<"delta_adjoint en adjoint = "<<delta_adjoint<<" element = "<<k<<std::endl;
 #endif
@@ -2389,8 +2405,9 @@ PetscErrorCode System::AdjointSolve(){
 				this->elementFunction.calculate_delta();
 
 
-				PetscReal delta_adjoint = elementFunction.get_delta();
+
 #ifdef DEBUG
+//				PetscReal delta_adjoint = elementFunction.get_delta();
 //				std::cout<<"alphaMax en adjoint PREVIOUS = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
 //				std::cout<<"delta_adjoint en adjoint PREVIOUS = "<<delta_adjoint<<" element = "<<k<<std::endl;
 #endif
@@ -2511,7 +2528,7 @@ PetscErrorCode System::PerturbPETScVector(Vec U, PetscInt & Index, PetscReal  & 
 
 PetscErrorCode System::ObjFunctionTime(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	  PetscErrorCode ierr;
-	  ierr = (*this.*CalculateObjFunctionTime)(U,alphaMax);
+	  ierr = (*this.*CalculateObjFunctionTime)(U,alphaMax,NumObjFunct);
 	  return ierr;
 }
 
@@ -2756,41 +2773,67 @@ PetscErrorCode System::ProcessObjFunctionTime(){
 	ierr = DMNetworkGetEdgeRange(networkdm,&eStart,&eEnd);CHKERRQ(ierr);
 	if (eStart == 0){
 	  ierr = DMNetworkGetVariableOffset(networkdm,eStart,&offsetfrom);CHKERRQ(ierr);
-	  FunctionValueFinalStep = uarr[offsetfrom];
+
+	  for (PetscInt j = 0; j < designData.N_ObjFunc; j++)
+		  CapitalOmega[j] = uarr[offsetfrom + j];
 	}
 
-	MPI_Bcast(&FunctionValueFinalStep,1, MPI_REAL, 0,PETSC_COMM_WORLD);
+	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
-	FunctionValueBeforePnorm = FunctionValueFinalStep;
+	MPI_Bcast(&CapitalOmega.front(),1, MPI_REAL, 0,PETSC_COMM_WORLD);
 
-	if (designData.objfunctionType == 1)
-		FunctionValueGlobal = PetscPowScalar(FunctionValueFinalStep,1.0/designData.TimeNorm);
+	//FunctionValueBeforePnorm = FunctionValueFinalStep;
+
+	if (designData.objfunctionType == 1){
+
+		for (PetscInt j = 0; j < designData.N_ObjFunc; j++)
+			FunctionObjetivoPartial[j] = PetscPowScalar(CapitalOmega[j],1.0/designData.TimeNorm);
+
+	}
 	else
 		FunctionValueGlobal = FunctionValueFinalStep;
 
 	if (rank == 0)
 		//std::cout<<"FunctionValue = "<<FunctionValueGlobal<<std::endl;
 
-	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
-	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
+
+
+	FunctionValueGlobal = 0.0;
+	for (PetscInt j = 0; j < designData.N_ObjFunc; j++){
+		if (designData.MaxOrMin[j])
+			FunctionValueGlobal += -1.0*FunctionObjetivoPartial[j];
+		else
+			FunctionValueGlobal += FunctionObjetivoPartial[j];
+	}
+
 
 	/*
-	 * Call Penalty Term
+	 * Calculate the CapitalOmega coefficient that will be used
+	 * in the adjoint analysis
 	 */
-
-	if (designData.MaxOrMin[0]){
-		FunctionValueGlobal *= -1.0;
-		FunctionValueBeforePnorm *= -1.0;
+	for (PetscInt j = 0; j < designData.N_ObjFunc; j++){
+		if (designData.MaxOrMin[j]){
+			if (CapitalOmega[j] != 0)
+				CapitalOmega[j] = -1.0/designData.TimeNorm*PetscPowScalar(CapitalOmega[j],1.0/designData.TimeNorm - 1.0);
+			else
+				CapitalOmega[j] = 0;
+		}
+		else{
+			if (CapitalOmega[j] != 0)
+				CapitalOmega[j] = 1.0/designData.TimeNorm*PetscPowScalar(CapitalOmega[j],1.0/designData.TimeNorm - 1.0);
+			else
+				CapitalOmega[j] = 0;
+		}
 	}
+
 
 	FunctionValueGlobalBeforePenalty = FunctionValueGlobal;
 
 
 	/*
-	 * Scale the objective function, just the part without the penalty term
+	 * Call Penalty Term
 	 */
-	FunctionValueGlobal *= scale_factor;
-
 
 	this->PenaltyTerm();
 
@@ -2808,36 +2851,9 @@ PetscErrorCode System::ProcessGradient(){
 	_is_gradient_calculated = true;
 
 	/*
-	 * We need to scale the vector Mu with  1 / p G ^ (1 / p - 1)
-	 * where p is the time norm and G is the value of the objective function
-	 */
-
-	if (designData.objfunctionType == 1){
-		PetscScalar alpha;
-		if (FunctionValueBeforePnorm != 0){
-			alpha = 1.0 / designData.TimeNorm * FunctionValueGlobalBeforePenalty / FunctionValueBeforePnorm;
-			ierr = VecScale(Mu, alpha);CHKERRQ(ierr);
-		}
-		else{
-			alpha = 0.0;
-			ierr = VecScale(Mu, alpha);CHKERRQ(ierr);
-		}
-	}
-
-
-	/*
-	 * Scale gradient
-	 */
-	ierr = VecScale(Mu, scale_factor);CHKERRQ(ierr);
-
-
-	/*
 	 * Call Penalty Term
 	 */
 	this->PenaltyTermGradient();
-
-	if (designData.MaxOrMin[0])
-		VecScale(Mu,-1.0);
 
 
 	VecAXPY(Mu,1.0,PenaltyGradient);
@@ -2889,14 +2905,14 @@ PetscErrorCode System::CheckGradient(){
 PetscErrorCode System::EvaluatePartialImplicitDerivatives(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	PetscErrorCode ierr;
 
-	ierr = (*this.*PartialImplicitDerivatives)(U,alphaMax);
+	ierr = (*this.*PartialImplicitDerivatives)(U,alphaMax,NumObjFunct);
 
 	return ierr;
 }
 PetscErrorCode System::EvaluatePartialExplicitDerivatives(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	PetscErrorCode ierr;
 
-	ierr = (*this.*PartialExplicitDerivatives)(U,alphaMax);
+	ierr = (*this.*PartialExplicitDerivatives)(U,alphaMax,NumObjFunct);
 
 	return ierr;
 }
@@ -2927,8 +2943,8 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	/*
 	 * Zero out the vector
 	 */
-	VecSet(dFdU,0.0);
-	VecSet(dFdalphaMax,0.0);
+	VecSet(dFdU_partial,0.0);
+	VecSet(dFdalphaMax_partial,0.0);
 
 
 	/*
@@ -2949,8 +2965,8 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	ierr = DMGlobalToLocalBegin(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
 	ierr = DMGlobalToLocalEnd(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
 
-	ierr = DMGlobalToLocalBegin(networkdm,dFdU,INSERT_VALUES,localdFdU);CHKERRQ(ierr);
-	ierr = DMGlobalToLocalEnd(networkdm,dFdU,INSERT_VALUES,localdFdU);CHKERRQ(ierr);
+	ierr = DMGlobalToLocalBegin(networkdm,dFdU_partial,INSERT_VALUES,localdFdU);CHKERRQ(ierr);
+	ierr = DMGlobalToLocalEnd(networkdm,dFdU_partial,INSERT_VALUES,localdFdU);CHKERRQ(ierr);
 
 	// Copy local vector to an array
 	ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
@@ -3076,7 +3092,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 				partialF_partialAlphaMax = partialF_partialAlphaMax*deriv_coef;
 
 				// Assemble into the corresponding time for partialF_partialU
-				VecSetValue(dFdalphaMax,elementIndex,(PetscScalar)(partialF_partialAlphaMax),ADD_VALUES);
+				VecSetValue(dFdalphaMax_partial,elementIndex,(PetscScalar)(partialF_partialAlphaMax),ADD_VALUES);
 
 		}
 	}
@@ -3088,23 +3104,23 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 //	ierr = VecAssemblyBegin(dFdU);
 //	ierr = VecAssemblyEnd(dFdU);
 
-	ierr = VecAssemblyBegin(dFdalphaMax);
-	ierr = VecAssemblyEnd(dFdalphaMax);
+	ierr = VecAssemblyBegin(dFdalphaMax_partial);
+	ierr = VecAssemblyEnd(dFdalphaMax_partial);
 
 	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
 	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
 
-	ierr = VecRestoreArray(dFdU,&partialF_partialU_arr);
-	ierr = DMLocalToGlobalBegin(networkdm,localdFdU,ADD_VALUES,dFdU);CHKERRQ(ierr);
-	ierr = DMLocalToGlobalEnd(networkdm,localdFdU,ADD_VALUES,dFdU);CHKERRQ(ierr);
+	ierr = VecRestoreArray(localdFdU,&partialF_partialU_arr);
+	ierr = DMLocalToGlobalBegin(networkdm,localdFdU,ADD_VALUES,dFdU_partial);CHKERRQ(ierr);
+	ierr = DMLocalToGlobalEnd(networkdm,localdFdU,ADD_VALUES,dFdU_partial);CHKERRQ(ierr);
 	ierr = DMRestoreLocalVector(networkdm,&localdFdU);CHKERRQ(ierr);
 
-	VecScale(dFdU,beta_coefficient);
+	VecScale(dFdU_partial,beta_coefficient);
 //	std::cout<<"Result of the interpolated dFdU"<<std::endl;
 //	VecView(dFdU_interp,PETSC_VIEWER_STDOUT_WORLD);
 
-	VecScale(dFdalphaMax,beta_coefficient);
+	VecScale(dFdalphaMax_partial,beta_coefficient);
 //	std::cout<<"Result of the interpolated dFdalphaMax"<<std::endl;
 //	VecView(dFdalphaMax_interp,PETSC_VIEWER_STDOUT_WORLD);
 
@@ -3131,7 +3147,7 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 	/*
 	 * Zero out the vector
 	 */
-	VecSet(dFdP,0.0);
+	VecSet(dFdP_partial,0.0);
 
 
 	ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
@@ -3227,18 +3243,18 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 				if (beadsdataFrom->design == 1){
 					PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
 					PetscScalar value = deriv_coef*partialF_partialP_element[0];
-					VecSetValue(dFdP,beadsdataFrom->design_index,value,ADD_VALUES);
+					VecSetValue(dFdP_partial,beadsdataFrom->design_index,value,ADD_VALUES);
 				}
 				if(beadsdataTo->design == 1){
 					PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
 					PetscScalar value = deriv_coef*partialF_partialP_element[1];
-					VecSetValue(dFdP,beadsdataTo->design_index,value,ADD_VALUES);
+					VecSetValue(dFdP_partial,beadsdataTo->design_index,value,ADD_VALUES);
 				}
 		}
 
 	}
-	VecAssemblyBegin(dFdP);
-	VecAssemblyEnd(dFdP);
+	VecAssemblyBegin(dFdP_partial);
+	VecAssemblyEnd(dFdP_partial);
 
 	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
 	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
@@ -3246,7 +3262,7 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 	beta_coefficient =  TimeNorm/SpaceNorm * PetscPowScalar(beta_coefficient_partial, TimeNorm/SpaceNorm - 1.0);
 
 
-	VecScale(dFdP,beta_coefficient);
+	VecScale(dFdP_partial,beta_coefficient);
 	return ierr;
 
 
@@ -3276,8 +3292,8 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & 
 	/*
 	 * Zero out the vector
 	 */
-	VecSet(dFdU,0.0);
-	VecSet(dFdalphaMax,0.0);
+	VecSet(dFdU_partial,0.0);
+	VecSet(dFdalphaMax_partial,0.0);
 
 
 	Vec           localU;
@@ -3334,7 +3350,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & 
 
 
 				// Assemble into the corresponding time for partialF_partialU
-				VecGetArray(dFdU,&partialF_partialU_arr);
+				VecGetArray(dFdU_partial,&partialF_partialU_arr);
 
 				// Derivative coefficient, from the chain rule in the objective function
 				//deriv_coef = theta*beta[index_target_element]*gamma;
@@ -3357,9 +3373,9 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & 
 				}
 
 				// Restore the modified vectors
-				ierr = VecRestoreArray(dFdU,&partialF_partialU_arr);
-				ierr = VecAssemblyBegin(dFdU);
-				ierr = VecAssemblyEnd(dFdU);
+				ierr = VecRestoreArray(dFdU_partial,&partialF_partialU_arr);
+				ierr = VecAssemblyBegin(dFdU_partial);
+				ierr = VecAssemblyEnd(dFdU_partial);
 
 
 
@@ -3375,7 +3391,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & 
 }
 PetscErrorCode System::EvaluatePartialExplicitDerivatives_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
-	VecSet(dFdP,0.0);
+	VecSet(dFdP_partial,0.0);
 	return(0);
 }
 
@@ -3421,7 +3437,7 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 
 		VecSet(Felement,0.0);
 
-		for (unsigned int i = 0; i<designData.N_ObjFunc; i++){
+		for (PetscInt i = 0; i<designData.N_ObjFunc; i++){
 
 			std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
 			const std::vector<int>::iterator 	end 	= designData.TargetArea_list[i].end();
@@ -3914,7 +3930,7 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  ierr = VecAssemblyEnd(partialF_partialP_FD);
 	  std::cout<<"/*-----------Comparing partial derivatives -------------*/"<<std::endl;
 	  std::cout<<"/*--------------------Analytical -----------------------*/"<<std::endl;
-	  VecView(dFdP,PETSC_VIEWER_STDOUT_WORLD);
+	  VecView(dFdP_partial,PETSC_VIEWER_STDOUT_WORLD);
 	  std::cout<<"/*--------------------------FD -------------------------*/"<<std::endl;
 	  VecView(partialF_partialP_FD,PETSC_VIEWER_STDOUT_WORLD);
 
@@ -4017,7 +4033,7 @@ PetscErrorCode System::FD_variables(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  // Compare the vectors
 	  std::cout<<"/*-----------Comparing partial derivatives -------------*/"<<std::endl;
 	  std::cout<<"/*--------------------Analytical -----------------------*/"<<std::endl;
-	  VecView(dFdU,PETSC_VIEWER_STDOUT_WORLD);
+	  VecView(dFdU_partial,PETSC_VIEWER_STDOUT_WORLD);
 	  std::cout<<"/*--------------------------FD -------------------------*/"<<std::endl;
 	  VecView(partialF_partialU_FD,PETSC_VIEWER_STDOUT_WORLD);
 
@@ -4101,7 +4117,7 @@ PetscErrorCode System::FD_statevariables(Vec & U, Vec & alphaMax, PetscInt & Num
 		  // Compare the vectors
 		  std::cout<<"/*----Comparing partial derivatives w.r.t. alphaMax ----*/"<<std::endl;
 		  std::cout<<"/*--------------------Analytical -----------------------*/"<<std::endl;
-		  VecView(dFdalphaMax,PETSC_VIEWER_STDOUT_WORLD);
+		  VecView(dFdalphaMax_partial,PETSC_VIEWER_STDOUT_WORLD);
 		  std::cout<<"/*--------------------------FD -------------------------*/"<<std::endl;
 		  VecView(partialF_partialalphaMax_FD,PETSC_VIEWER_STDOUT_WORLD);
 
@@ -4577,7 +4593,15 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 		exit(-1);
 	}
 
+
+	/*
+	 * Fill the array with ones.
+	 */
 	CapitalOmega.resize(designData.N_ObjFunc);
+	FunctionObjetivoPartial.resize(designData.N_ObjFunc);
+	std::fill(CapitalOmega.begin(),CapitalOmega.end(),1.0);
+	std::fill(FunctionObjetivoPartial.begin(),FunctionObjetivoPartial.end(),0.0);
+
 
 	/*
 	 * What kind of problem is it? Large or small deformations?

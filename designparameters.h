@@ -18,8 +18,9 @@ class DesignParameters
 
 		double penalty_weight;
 
-		unsigned int N_ObjFunc, N_ConstrFunc, N_DesignVariables;
+		unsigned int  N_ConstrFunc, N_DesignVariables;
 
+		PetscInt N_ObjFunc;
 		// MaxOrMin type: 1 for maximization, 0 for minimization
 		std::vector<unsigned int> MaxOrMin;
 
@@ -52,7 +53,7 @@ class DesignParameters
 		void design_info(){
 			std::cout<<"##### PRINTING Design INFO ######"<<std::endl;
 			std::cout<<"Number of objective functions = "<<N_ObjFunc<<std::endl;
-			for (unsigned int i = 0;i<N_ObjFunc; i++){
+			for (PetscInt i = 0;i<N_ObjFunc; i++){
 				std::cout<<"Number of target elements for Obj Funct # "<<i<<" = "<<TargetArea_list[i].size()<<std::endl;
 				for (unsigned int j = 0;j<TargetArea_list[i].size(); j++){
 					std::cout<<TargetArea_list[i][j]<<" ";

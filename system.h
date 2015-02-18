@@ -285,7 +285,7 @@ class System
 	 * Vector where we keep the coefficients for the derivatives
 	 * of each objective function
 	 */
-	std::vector<PetscReal> CapitalOmega;
+	std::vector<PetscReal> CapitalOmega, FunctionObjetivoPartial;
 	/*
 	 * Implicit variables history
 	 */
@@ -313,19 +313,16 @@ class System
 	/*
 	 * Partial derivatives w.r.t U
 	 */
-	std::vector<Vec> partialF_partialU;
-	Vec dFdU;
+	Vec dFdU, dFdU_partial;
 	/*
 	 * Partial derivatives w.r.t alphaMax
 	 */
-	std::vector<Vec> partialF_partialalphaMax;
-	Vec dFdalphaMax;
+	Vec dFdalphaMax, dFdalphaMax_partial;
 
 	/*
 	 * Partial derivatives w.r.t alphaMax
 	 */
-	std::vector<PetscScalar> partialF_partialP;
-	Vec dFdP;
+	Vec dFdP, dFdP_partial;
 
 	/*
 	 * Function Gradient
@@ -365,10 +362,6 @@ class System
 	 */
 	unsigned int Stages;
 
-	/*
-	 * Scale factor for the objective function
-	 */
-	PetscReal scale_factor;
 
 	/*
 	 * PETSc Stages
