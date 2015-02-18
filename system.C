@@ -184,10 +184,15 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
    /*
     * Adding the value of the objective function
     */
-   sistema->ObjFunctionTime(U,sistema->alphaMax);
+
    if (eStart == 0){ // Conditional so we only add the new DOF in the processor where the first element is
   	 ierr = DMNetworkGetVariableOffset(networkdm,eStart,&offsetfrom);CHKERRQ(ierr);
-  	 farr[offsetfrom] = sistema->FunctionValue;
+
+  	 for (PetscInt j = 0; j < sistema->designData.N_ObjFunc; j++){
+  		 sistema->ObjFunctionTime(U,sistema->alphaMax,j);
+  		 farr[offsetfrom + j] = sistema->FunctionValue;
+  	 }
+
    }
 #ifdef DEBUG
 //
@@ -754,13 +759,14 @@ PetscErrorCode System::SetUpDMNetwork()
 	  }
 
 	  /*
-	   * Add degree of freedom corresponding to the objective function
-	   * It will be added to the first edge
+	   * Add degrees of freedom corresponding to the objective functions
+	   * It will be added to the first N edges, where N is the number of objective function
 	   */
 	  PetscInt eStart, eEnd;
 	  ierr = DMNetworkGetEdgeRange(networkdm,&eStart,&eEnd);CHKERRQ(ierr);
 	  if (eStart == 0){ // Conditional so we only add the new DOF in the processor where the first element is
-		  ierr = DMNetworkAddNumVariables(networkdm,eStart,1);CHKERRQ(ierr);
+		  unsigned int N = designData.N_ObjFunc;
+		  ierr = DMNetworkAddNumVariables(networkdm,eStart,N);CHKERRQ(ierr);
 	  }
 
 	  /* Set up DM for use */
@@ -1921,9 +1927,10 @@ PetscErrorCode System::AdjointSolve(){
 			 * Check FD for the Partial derivatives
 			 */
 			  if (problemData.finiteDifference){
-			 	FD_variables(U_RK_Stage,*alphaMaxVec);
-			 	FD_statevariables(U_RK_Stage,*alphaMaxVec);
-			 	FD_parameter(U_RK_Stage,*alphaMaxVec);
+				  PetscInt NumbObjFunction = 1;
+				  FD_variables(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+				  FD_statevariables(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
+				  FD_parameter(U_RK_Stage,*alphaMaxVec,NumbObjFunction);
 			  }
 
 
@@ -2502,13 +2509,13 @@ PetscErrorCode System::PerturbPETScVector(Vec U, PetscInt & Index, PetscReal  & 
 }
 
 
-PetscErrorCode System::ObjFunctionTime(Vec & U, Vec & alphaMax){
+PetscErrorCode System::ObjFunctionTime(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	  PetscErrorCode ierr;
 	  ierr = (*this.*CalculateObjFunctionTime)(U,alphaMax);
 	  return ierr;
 }
 
-PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax){
+PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 	  PetscErrorCode ierr;
 
@@ -2549,50 +2556,48 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax){
 	VecAssemblyBegin(alphaMax);
 	VecAssemblyEnd(alphaMax);
 
-	for (unsigned int i = 0; i<designData.N_ObjFunc; i++){
+	std::vector<int>::iterator 		target 	= designData.TargetArea_list[NumObjFunct].begin();
+	const std::vector<int>::iterator 	end 	= designData.TargetArea_list[NumObjFunct].end();
 
-		std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
-		const std::vector<int>::iterator 	end 	= designData.TargetArea_list[i].end();
-
-		for (; target != end; ++target){
-			// Only perform calculations if the element is within this processor
+	for (; target != end; ++target){
+		// Only perform calculations if the element is within this processor
 
 
-			if (*target - 1 >= eStart && *target - 1 <eEnd){
+		if (*target - 1 >= eStart && *target - 1 <eEnd){
 
 
 
 
 //						std::cout<<"Element obj function dentro = "<<*target<<std::endl;
-						// Recover information for alphaMax
-						// We need to call the values of alphaMax for this element, because we have passed
-						// the conditional, we know the element is within this processor
-						PetscInt elementIndex = *target - 1;
+					// Recover information for alphaMax
+					// We need to call the values of alphaMax for this element, because we have passed
+					// the conditional, we know the element is within this processor
+					PetscInt elementIndex = *target - 1;
 
-						VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
-						PetscInt    offsetd,key;
+					VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
+					PetscInt    offsetd,key;
 
 
-						// Beads that belong to this element/contact
-						const PetscInt *cone;
-						DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
-						vfrom = cone[0];
-						vto   = cone[1];
+					// Beads that belong to this element/contact
+					const PetscInt *cone;
+					DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
+					vfrom = cone[0];
+					vto   = cone[1];
 
-						/*
-						 * Get the data from these beads
-						 */
-						ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
-						// Cast component data
-						beadsdataFrom = (arrayBeads)(arr + offsetd);
+					/*
+					 * Get the data from these beads
+					 */
+					ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
+					// Cast component data
+					beadsdataFrom = (arrayBeads)(arr + offsetd);
 
-						ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
-						// Cast component data
-						beadsdataTo = (arrayBeads)(arr + offsetd);
+					ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
+					// Cast component data
+					beadsdataTo = (arrayBeads)(arr + offsetd);
 
 //						std::cout<<"coordenadas de los nodos del elemento"<<std::endl;
 
-						// We need to correct the id to access the information in the DMNetwork
+					// We need to correct the id to access the information in the DMNetwork
 
 //						PetscInt bead_id_from = vfrom + 1 - problemData.N_Elements;
 //						PetscInt bead_id_to = vto + 1 - problemData.N_Elements;
@@ -2605,38 +2610,37 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax){
 //						std::cout<<"x to = "<<beadsdataTo->coordx<<std::endl;
 //						std::cout<<"y to = "<<beadsdataTo->coordy<<std::endl;
 
-						ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
-						ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
+					ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
+					ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
 
-						// Grab displacement components
-						U_i_from = uarr[offsetfrom + 2];
-						U_j_from = uarr[offsetfrom + 3];
+					// Grab displacement components
+					U_i_from = uarr[offsetfrom + 2];
+					U_j_from = uarr[offsetfrom + 3];
 
-						U_i_to = uarr[offsetto + 2];
-						U_j_to = uarr[offsetto + 3];
+					U_i_to = uarr[offsetto + 2];
+					U_j_to = uarr[offsetto + 3];
 
-						// Reset the beads for the constitutive law object
-						this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
-						this->elementFunction.set_alphaMax(*alphaMaxarr);
-						this->elementFunction.calculate_delta();
-						PetscReal F_element_element = this->elementFunction.force_coefficient();
+					// Reset the beads for the constitutive law object
+					this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+					this->elementFunction.set_alphaMax(*alphaMaxarr);
+					this->elementFunction.calculate_delta();
+					PetscReal F_element_element = this->elementFunction.force_coefficient();
 
-						// Add contribution for this time step
-						FValueTotalElement += PetscPowScalar(F_element_element,SpaceNorm);
+					// Add contribution for this time step
+					FValueTotalElement += PetscPowScalar(F_element_element,SpaceNorm);
 
 //						std::cout<<"F_element_element for element "<<*target<<" = "<<F_element_element<<std::endl;
 //						std::cout<<"FValueTotalElement  "<<*target<<" = "<<FValueTotalElement<<std::endl;
 
 
-					}
-		}
-		LocalFunctionValue += PetscPowScalar(FValueTotalElement, TimeNorm/SpaceNorm);
+				}
+	}
+	LocalFunctionValue += PetscPowScalar(FValueTotalElement, TimeNorm/SpaceNorm);
 
 //		std::cout<<"LocalFunctionValue = "<<LocalFunctionValue<<std::endl;
 
-		// Gather values for the objective functions
-		MPI_Allreduce(&LocalFunctionValue, &FunctionValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
-	}
+	// Gather values for the objective functions
+	MPI_Allreduce(&LocalFunctionValue, &FunctionValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
 
 //	std::cout<<"FunctionValue = "<<FunctionValue<<std::endl;
 
@@ -2647,7 +2651,7 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax){
 
 }
 
-PetscErrorCode System::CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax){
+PetscErrorCode System::CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 	  PetscErrorCode ierr;
 
@@ -2681,49 +2685,47 @@ PetscErrorCode System::CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax){
 	VecAssemblyBegin(alphaMax);
 	VecAssemblyEnd(alphaMax);
 
-	for (unsigned int i = 0; i<designData.N_ObjFunc; i++){
 
-		std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
-		const std::vector<int>::iterator 	end 	= designData.TargetArea_list[i].end();
+	std::vector<int>::iterator 		target 	= designData.TargetArea_list[NumObjFunct].begin();
+	const std::vector<int>::iterator 	end 	= designData.TargetArea_list[NumObjFunct].end();
 
-		for (; target != end; ++target){
-			// Only perform calculations if the element is within this processor
-			if (*target - 1 >= eStart && *target - 1 <eEnd){
-
+	for (; target != end; ++target){
+		// Only perform calculations if the element is within this processor
+		if (*target - 1 >= eStart && *target - 1 <eEnd){
 
 
 
 
-						// Recover information for alphaMax
-						// We need to call the values of alphaMax for this element, because we have passed
-						// the conditional, we know the element is within this processor
-						PetscInt elementIndex = *target - 1;
 
-						VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
+					// Recover information for alphaMax
+					// We need to call the values of alphaMax for this element, because we have passed
+					// the conditional, we know the element is within this processor
+					PetscInt elementIndex = *target - 1;
 
-						// Beads that belong to this element/contact
-						const PetscInt *cone;
-						DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
-						vfrom = cone[0];
+					VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
 
-
-						ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
+					// Beads that belong to this element/contact
+					const PetscInt *cone;
+					DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
+					vfrom = cone[0];
 
 
-						// Grab displacement components
-						U_i_from = uarr[offsetfrom + 2];
+					ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
 
 
-						// Add contribution for this time step
-						FValueTotalElement += U_i_from;
+					// Grab displacement components
+					U_i_from = uarr[offsetfrom + 2];
 
-					}
-		}
-		LocalFunctionValue += FValueTotalElement;
 
-		// Gather values for the objective functions
-		MPI_Allreduce(&LocalFunctionValue, &FunctionValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
+					// Add contribution for this time step
+					FValueTotalElement += U_i_from;
+
+				}
 	}
+	LocalFunctionValue += FValueTotalElement;
+
+	// Gather values for the objective functions
+	MPI_Allreduce(&LocalFunctionValue, &FunctionValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
 
 	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
 	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
@@ -2884,14 +2886,14 @@ PetscErrorCode System::CheckGradient(){
 
 }
 
-PetscErrorCode System::EvaluatePartialImplicitDerivatives(Vec & U, Vec & alphaMax){
+PetscErrorCode System::EvaluatePartialImplicitDerivatives(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	PetscErrorCode ierr;
 
 	ierr = (*this.*PartialImplicitDerivatives)(U,alphaMax);
 
 	return ierr;
 }
-PetscErrorCode System::EvaluatePartialExplicitDerivatives(Vec & U, Vec & alphaMax){
+PetscErrorCode System::EvaluatePartialExplicitDerivatives(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	PetscErrorCode ierr;
 
 	ierr = (*this.*PartialExplicitDerivatives)(U,alphaMax);
@@ -2899,7 +2901,7 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives(Vec & U, Vec & alphaMa
 	return ierr;
 }
 
-PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax){
+PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 
 
@@ -2958,131 +2960,128 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	VecAssemblyBegin(alphaMax);
 	VecAssemblyEnd(alphaMax);
 
-	for (unsigned int i = 0; i<designData.N_ObjFunc; i++){
+	std::vector<int>::iterator 		target 	= designData.TargetArea_list[NumObjFunct].begin();
+	const std::vector<int>::iterator 	end 	= designData.TargetArea_list[NumObjFunct].end();
 
-		std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
-		const std::vector<int>::iterator 	end 	= designData.TargetArea_list[i].end();
-
-		// Derivative coefficient
-		PetscScalar deriv_coef = 0.0;
+	// Derivative coefficient
+	PetscScalar deriv_coef = 0.0;
 
 
 
-		for (; target != end; ++target){
-			// Only perform calculations if the element is within this processor
-			if (*target - 1 >= eStart && *target - 1 <eEnd){
+	for (; target != end; ++target){
+		// Only perform calculations if the element is within this processor
+		if (*target - 1 >= eStart && *target - 1 <eEnd){
 
 
 
 
-					// Recover information for alphaMax
-					// We need to call the values of alphaMax for this element, because we have passed
-					// the conditional, we know the element is within this processor
-					PetscInt elementIndex = *target - 1;
+				// Recover information for alphaMax
+				// We need to call the values of alphaMax for this element, because we have passed
+				// the conditional, we know the element is within this processor
+				PetscInt elementIndex = *target - 1;
 
-					VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
-
-
+				VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
 
 
-					// Beads that belong to this element/contact
-					const PetscInt *cone;
-					DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
-					vfrom = cone[0];
-					vto   = cone[1];
-
-					/*
-					 * Get the data from these beads
-					 */
-					PetscInt    offsetd,key;
-					ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
-					// Cast component data
-					beadsdataFrom = (arrayBeads)(arr + offsetd);
-
-					ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
-					// Cast component data
-					beadsdataTo = (arrayBeads)(arr + offsetd);
 
 
-					ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
-					ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
+				// Beads that belong to this element/contact
+				const PetscInt *cone;
+				DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
+				vfrom = cone[0];
+				vto   = cone[1];
 
-					// Grab displacement components
-					U_i_from = uarr[offsetfrom + 2];
-					U_j_from = uarr[offsetfrom + 3];
+				/*
+				 * Get the data from these beads
+				 */
+				PetscInt    offsetd,key;
+				ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
+				// Cast component data
+				beadsdataFrom = (arrayBeads)(arr + offsetd);
 
-					U_i_to = uarr[offsetto + 2];
-					U_j_to = uarr[offsetto + 3];
-
-					// Reset the beads for the constitutive law object
-					this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
-					this->elementFunction.set_alphaMax(*alphaMaxarr);
-					this->elementFunction.calculate_delta();
-
-					PetscReal F_element_time = this->elementFunction.force_coefficient();
-
-					// Calculating the partial derivatives coefficients
+				ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
+				// Cast component data
+				beadsdataTo = (arrayBeads)(arr + offsetd);
 
 
-					/*
-					 * Partial derivative w.r.t vector of variables
-					 */
-					PetscReal *  partial_F_element_time = this->elementFunction.partial_derivative_U_force_vector();
+				ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
+				ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
 
-					// Derivative coefficient, from the chain rule in the objective function
-					//deriv_coef = theta*beta[index_target_element]*gamma;
-					deriv_coef = SpaceNorm * PetscPowScalar(F_element_time, SpaceNorm - 1.0);
-					beta_coefficient_local += PetscPowScalar(F_element_time, SpaceNorm);
+				// Grab displacement components
+				U_i_from = uarr[offsetfrom + 2];
+				U_j_from = uarr[offsetfrom + 3];
 
-					partialF_partialU_arr[offsetfrom + 2] += deriv_coef*partial_F_element_time[0];
-					partialF_partialU_arr[offsetfrom + 3] += deriv_coef*partial_F_element_time[1];
+				U_i_to = uarr[offsetto + 2];
+				U_j_to = uarr[offsetto + 3];
 
+				// Reset the beads for the constitutive law object
+				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+				this->elementFunction.set_alphaMax(*alphaMaxarr);
+				this->elementFunction.calculate_delta();
+
+				PetscReal F_element_time = this->elementFunction.force_coefficient();
+
+				// Calculating the partial derivatives coefficients
+
+
+				/*
+				 * Partial derivative w.r.t vector of variables
+				 */
+				PetscReal *  partial_F_element_time = this->elementFunction.partial_derivative_U_force_vector();
+
+				// Derivative coefficient, from the chain rule in the objective function
+				//deriv_coef = theta*beta[index_target_element]*gamma;
+				deriv_coef = SpaceNorm * PetscPowScalar(F_element_time, SpaceNorm - 1.0);
+				beta_coefficient_local += PetscPowScalar(F_element_time, SpaceNorm);
+
+				partialF_partialU_arr[offsetfrom + 2] += deriv_coef*partial_F_element_time[0];
+				partialF_partialU_arr[offsetfrom + 3] += deriv_coef*partial_F_element_time[1];
+
+				partialF_partialU_arr[offsetfrom] = 0.0;
+				partialF_partialU_arr[offsetfrom + 1] = 0.0;
+
+				partialF_partialU_arr[offsetto + 2] += deriv_coef*partial_F_element_time[2];
+				partialF_partialU_arr[offsetto + 3] += deriv_coef*partial_F_element_time[3];
+
+				partialF_partialU_arr[offsetto] = 0.0;
+				partialF_partialU_arr[offsetto + 1] = 0.0;
+
+				if (beadsdataFrom->constrained_dof_x){
 					partialF_partialU_arr[offsetfrom] = 0.0;
+					partialF_partialU_arr[offsetfrom + 2] = 0.0;
+				}
+				if (beadsdataFrom->constrained_dof_y){
 					partialF_partialU_arr[offsetfrom + 1] = 0.0;
-
-					partialF_partialU_arr[offsetto + 2] += deriv_coef*partial_F_element_time[2];
-					partialF_partialU_arr[offsetto + 3] += deriv_coef*partial_F_element_time[3];
-
+					partialF_partialU_arr[offsetfrom + 3] = 0.0;
+				}
+				if (beadsdataTo->constrained_dof_x){
 					partialF_partialU_arr[offsetto] = 0.0;
+					partialF_partialU_arr[offsetto + 2] = 0.0;
+				}
+				if (beadsdataTo->constrained_dof_y){
 					partialF_partialU_arr[offsetto + 1] = 0.0;
-
-					if (beadsdataFrom->constrained_dof_x){
-						partialF_partialU_arr[offsetfrom] = 0.0;
-						partialF_partialU_arr[offsetfrom + 2] = 0.0;
-					}
-					if (beadsdataFrom->constrained_dof_y){
-						partialF_partialU_arr[offsetfrom + 1] = 0.0;
-						partialF_partialU_arr[offsetfrom + 3] = 0.0;
-					}
-					if (beadsdataTo->constrained_dof_x){
-						partialF_partialU_arr[offsetto] = 0.0;
-						partialF_partialU_arr[offsetto + 2] = 0.0;
-					}
-					if (beadsdataTo->constrained_dof_y){
-						partialF_partialU_arr[offsetto + 1] = 0.0;
-						partialF_partialU_arr[offsetto + 3] = 0.0;
-					}
+					partialF_partialU_arr[offsetto + 3] = 0.0;
+				}
 
 
 
 
 
-					/*
-					 * Partial derivative w.r.t alphaMax
-					 */
+				/*
+				 * Partial derivative w.r.t alphaMax
+				 */
 
-					PetscReal partialF_partialAlphaMax = this->elementFunction.partial_derivative_alphaMax_force_vector();
+				PetscReal partialF_partialAlphaMax = this->elementFunction.partial_derivative_alphaMax_force_vector();
 
-					partialF_partialAlphaMax = partialF_partialAlphaMax*deriv_coef;
+				partialF_partialAlphaMax = partialF_partialAlphaMax*deriv_coef;
 
-					// Assemble into the corresponding time for partialF_partialU
-					VecSetValue(dFdalphaMax,elementIndex,(PetscScalar)(partialF_partialAlphaMax),ADD_VALUES);
+				// Assemble into the corresponding time for partialF_partialU
+				VecSetValue(dFdalphaMax,elementIndex,(PetscScalar)(partialF_partialAlphaMax),ADD_VALUES);
 
-			}
 		}
-		MPI_Allreduce(&beta_coefficient_local, &beta_coefficient_partial, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
-		beta_coefficient =  TimeNorm/SpaceNorm * PetscPowScalar(beta_coefficient_partial, TimeNorm/SpaceNorm - 1.0);
 	}
+	MPI_Allreduce(&beta_coefficient_local, &beta_coefficient_partial, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
+	beta_coefficient =  TimeNorm/SpaceNorm * PetscPowScalar(beta_coefficient_partial, TimeNorm/SpaceNorm - 1.0);
 
 	// Restore the modified vectors
 //	ierr = VecRestoreArray(dFdU,&partialF_partialU_arr);
@@ -3114,7 +3113,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 }
 
-PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax){
+PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 
 	_is_partial_derivatives_calculated = true;
@@ -3151,102 +3150,100 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 	unsigned int TimeNorm = designData.TimeNorm;
 	unsigned int SpaceNorm = designData.SpaceNorm;
 
-	for (unsigned int i = 0; i<designData.N_ObjFunc; i++){
 
-		std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
-		const std::vector<int>::iterator 	end 	= designData.TargetArea_list[i].end();
+	std::vector<int>::iterator 		target 	= designData.TargetArea_list[NumObjFunct].begin();
+	const std::vector<int>::iterator 	end 	= designData.TargetArea_list[NumObjFunct].end();
 
-		// Derivative coefficient
-		PetscScalar deriv_coef = 0.0;
+	// Derivative coefficient
+	PetscScalar deriv_coef = 0.0;
 
-		Vec           localU;
-		ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
-		// Get displacement vector for this time step
-		ierr = DMGlobalToLocalBegin(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
-		ierr = DMGlobalToLocalEnd(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
-		// Copy local vector to an array
-		ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
+	Vec           localU;
+	ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
+	// Get displacement vector for this time step
+	ierr = DMGlobalToLocalBegin(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
+	ierr = DMGlobalToLocalEnd(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
+	// Copy local vector to an array
+	ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
 
 
-		for (; target != end; ++target){
-			// Only perform calculations if the element is within this processor
-			if (*target - 1 >= eStart && *target - 1 <eEnd){
+	for (; target != end; ++target){
+		// Only perform calculations if the element is within this processor
+		if (*target - 1 >= eStart && *target - 1 <eEnd){
 
-					// Recover information for alphaMax
-					// We need to call the values of alphaMax for this element, because we have passed
-					// the conditional, we know the element is within this processor
-					PetscInt elementIndex = *target - 1;
-					VecAssemblyBegin(alphaMax);
-					VecAssemblyEnd(alphaMax);
-					VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
-
+				// Recover information for alphaMax
+				// We need to call the values of alphaMax for this element, because we have passed
+				// the conditional, we know the element is within this processor
+				PetscInt elementIndex = *target - 1;
+				VecAssemblyBegin(alphaMax);
+				VecAssemblyEnd(alphaMax);
+				VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
 
 
 
-					// Beads that belong to this element/contact
-					const PetscInt *cone;
-					DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
-					vfrom = cone[0];
-					vto   = cone[1];
 
-					/*
-					 * Get the data from these beads
-					 */
-					PetscInt    offsetd,key;
-					ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
-					// Cast component data
-					beadsdataFrom = (arrayBeads)(arr + offsetd);
+				// Beads that belong to this element/contact
+				const PetscInt *cone;
+				DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
+				vfrom = cone[0];
+				vto   = cone[1];
 
-					ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
-					// Cast component data
-					beadsdataTo = (arrayBeads)(arr + offsetd);
+				/*
+				 * Get the data from these beads
+				 */
+				PetscInt    offsetd,key;
+				ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
+				// Cast component data
+				beadsdataFrom = (arrayBeads)(arr + offsetd);
+
+				ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
+				// Cast component data
+				beadsdataTo = (arrayBeads)(arr + offsetd);
 
 
-					ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
-					ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
+				ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
+				ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
 
-					// Grab displacement components
-					U_i_from = uarr[offsetfrom + 2];
-					U_j_from = uarr[offsetfrom + 3];
+				// Grab displacement components
+				U_i_from = uarr[offsetfrom + 2];
+				U_j_from = uarr[offsetfrom + 3];
 
-					U_i_to = uarr[offsetto + 2];
-					U_j_to = uarr[offsetto + 3];
+				U_i_to = uarr[offsetto + 2];
+				U_j_to = uarr[offsetto + 3];
 
-					// Reset the beads for the constitutive law object
-					this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
-					this->elementFunction.set_alphaMax(*alphaMaxarr);
-					this->elementFunction.calculate_delta();
+				// Reset the beads for the constitutive law object
+				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+				this->elementFunction.set_alphaMax(*alphaMaxarr);
+				this->elementFunction.calculate_delta();
 
-					PetscReal F_element_time = this->elementFunction.force_coefficient();
+				PetscReal F_element_time = this->elementFunction.force_coefficient();
 
-					// Derivative coefficient, from the chain rule in the objective function
-					deriv_coef = SpaceNorm * PetscPowScalar(F_element_time, SpaceNorm - 1.0);
-					beta_coefficient_local += PetscPowScalar(F_element_time, SpaceNorm);
+				// Derivative coefficient, from the chain rule in the objective function
+				deriv_coef = SpaceNorm * PetscPowScalar(F_element_time, SpaceNorm - 1.0);
+				beta_coefficient_local += PetscPowScalar(F_element_time, SpaceNorm);
 
-					/*
-					 * Partial derivative w.r.t parameter
-					 */
-					if (beadsdataFrom->design == 1){
-						PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
-						PetscScalar value = deriv_coef*partialF_partialP_element[0];
-						VecSetValue(dFdP,beadsdataFrom->design_index,value,ADD_VALUES);
-					}
-					if(beadsdataTo->design == 1){
-						PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
-						PetscScalar value = deriv_coef*partialF_partialP_element[1];
-						VecSetValue(dFdP,beadsdataTo->design_index,value,ADD_VALUES);
-					}
-			}
-
+				/*
+				 * Partial derivative w.r.t parameter
+				 */
+				if (beadsdataFrom->design == 1){
+					PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
+					PetscScalar value = deriv_coef*partialF_partialP_element[0];
+					VecSetValue(dFdP,beadsdataFrom->design_index,value,ADD_VALUES);
+				}
+				if(beadsdataTo->design == 1){
+					PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
+					PetscScalar value = deriv_coef*partialF_partialP_element[1];
+					VecSetValue(dFdP,beadsdataTo->design_index,value,ADD_VALUES);
+				}
 		}
-		VecAssemblyBegin(dFdP);
-		VecAssemblyEnd(dFdP);
 
-		ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
-		ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
-		MPI_Allreduce(&beta_coefficient_local, &beta_coefficient_partial, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
-		beta_coefficient =  TimeNorm/SpaceNorm * PetscPowScalar(beta_coefficient_partial, TimeNorm/SpaceNorm - 1.0);
 	}
+	VecAssemblyBegin(dFdP);
+	VecAssemblyEnd(dFdP);
+
+	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
+	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
+	MPI_Allreduce(&beta_coefficient_local, &beta_coefficient_partial, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
+	beta_coefficient =  TimeNorm/SpaceNorm * PetscPowScalar(beta_coefficient_partial, TimeNorm/SpaceNorm - 1.0);
 
 
 	VecScale(dFdP,beta_coefficient);
@@ -3255,7 +3252,7 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 }
 
-PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & alphaMax){
+PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 
 	_is_partial_derivatives_calculated = true;
@@ -3291,86 +3288,83 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & 
 	// Copy local vector to an array
 	ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
 
-	for (unsigned int i = 0; i<designData.N_ObjFunc; i++){
 
-		std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
-		const std::vector<int>::iterator 	end 	= designData.TargetArea_list[i].end();
-
-
-
-
-		for (; target != end; ++target){
-			// Only perform calculations if the element is within this processor
-			if (*target - 1 >= eStart && *target - 1 <eEnd){
+	std::vector<int>::iterator 		target 	= designData.TargetArea_list[NumObjFunct].begin();
+	const std::vector<int>::iterator 	end 	= designData.TargetArea_list[NumObjFunct].end();
 
 
 
 
-					// Recover information for alphaMax
-					// We need to call the values of alphaMax for this element, because we have passed
-					// the conditional, we know the element is within this processor
-					PetscInt elementIndex = *target - 1;
-					VecAssemblyBegin(alphaMax);
-					VecAssemblyEnd(alphaMax);
-					VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
+	for (; target != end; ++target){
+		// Only perform calculations if the element is within this processor
+		if (*target - 1 >= eStart && *target - 1 <eEnd){
 
 
 
 
-					// Beads that belong to this element/contact
-					const PetscInt *cone;
-					DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
-					vfrom = cone[0];
-
-					/*
-					 * Get the data from these beads
-					 */
-					PetscInt    offsetd,key;
-					ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
-					// Cast component data
-					beadsdataFrom = (arrayBeads)(arr + offsetd);
+				// Recover information for alphaMax
+				// We need to call the values of alphaMax for this element, because we have passed
+				// the conditional, we know the element is within this processor
+				PetscInt elementIndex = *target - 1;
+				VecAssemblyBegin(alphaMax);
+				VecAssemblyEnd(alphaMax);
+				VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
 
 
 
 
-					ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
+				// Beads that belong to this element/contact
+				const PetscInt *cone;
+				DMNetworkGetConnectedNodes(networkdm,elementIndex,&cone);
+				vfrom = cone[0];
+
+				/*
+				 * Get the data from these beads
+				 */
+				PetscInt    offsetd,key;
+				ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
+				// Cast component data
+				beadsdataFrom = (arrayBeads)(arr + offsetd);
 
 
 
-					// Assemble into the corresponding time for partialF_partialU
-					VecGetArray(dFdU,&partialF_partialU_arr);
 
-					// Derivative coefficient, from the chain rule in the objective function
-					//deriv_coef = theta*beta[index_target_element]*gamma;
+				ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
 
-					partialF_partialU_arr[offsetfrom + 2] = 1.0;
-					partialF_partialU_arr[offsetfrom + 3] = 0.0;
 
+
+				// Assemble into the corresponding time for partialF_partialU
+				VecGetArray(dFdU,&partialF_partialU_arr);
+
+				// Derivative coefficient, from the chain rule in the objective function
+				//deriv_coef = theta*beta[index_target_element]*gamma;
+
+				partialF_partialU_arr[offsetfrom + 2] = 1.0;
+				partialF_partialU_arr[offsetfrom + 3] = 0.0;
+
+				partialF_partialU_arr[offsetfrom] = 0.0;
+				partialF_partialU_arr[offsetfrom + 1] = 0.0;
+
+
+
+				if (beadsdataFrom->constrained_dof_x){
 					partialF_partialU_arr[offsetfrom] = 0.0;
+					partialF_partialU_arr[offsetfrom + 2] = 0.0;
+				}
+				if (beadsdataFrom->constrained_dof_y){
 					partialF_partialU_arr[offsetfrom + 1] = 0.0;
+					partialF_partialU_arr[offsetfrom + 3] = 0.0;
+				}
 
-
-
-					if (beadsdataFrom->constrained_dof_x){
-						partialF_partialU_arr[offsetfrom] = 0.0;
-						partialF_partialU_arr[offsetfrom + 2] = 0.0;
-					}
-					if (beadsdataFrom->constrained_dof_y){
-						partialF_partialU_arr[offsetfrom + 1] = 0.0;
-						partialF_partialU_arr[offsetfrom + 3] = 0.0;
-					}
-
-					// Restore the modified vectors
-					ierr = VecRestoreArray(dFdU,&partialF_partialU_arr);
-					ierr = VecAssemblyBegin(dFdU);
-					ierr = VecAssemblyEnd(dFdU);
+				// Restore the modified vectors
+				ierr = VecRestoreArray(dFdU,&partialF_partialU_arr);
+				ierr = VecAssemblyBegin(dFdU);
+				ierr = VecAssemblyEnd(dFdU);
 
 
 
 
-			}
 		}
-
 	}
 
 	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
@@ -3379,7 +3373,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & 
 
 	return ierr;
 }
-PetscErrorCode System::EvaluatePartialExplicitDerivatives_Simple(Vec & U, Vec & alphaMax){
+PetscErrorCode System::EvaluatePartialExplicitDerivatives_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 	VecSet(dFdP,0.0);
 	return(0);
@@ -3845,7 +3839,7 @@ PetscErrorCode System::PenaltyTermGradient(){
 
 }
 
-PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax){
+PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	  PetscErrorCode ierr;
 
 	  assert(_is_partial_derivatives_calculated && "Need to calculate the derivatives first");
@@ -3893,7 +3887,7 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax){
 			  DesignBead->density_design += dt;
 
 			  // Evaluate function
-			  ObjFunctionTime(U,alphaMax);
+			  ObjFunctionTime(U,alphaMax,NumObjFunct);
 			  FD_partial_deriv = FunctionValue;
 
 			  // Change the parameter again, now backwards
@@ -3901,7 +3895,7 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax){
 
 
 			  // Evaluate function
-			  ObjFunctionTime(U,alphaMax);
+			  ObjFunctionTime(U,alphaMax,NumObjFunct);
 			  FD_partial_deriv -= FunctionValue;
 
 			  // Final value
@@ -3932,7 +3926,7 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax){
 
 }
 
-PetscErrorCode System::FD_variables(Vec & U, Vec & alphaMax){
+PetscErrorCode System::FD_variables(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 
 	  PetscErrorCode ierr;
@@ -3980,7 +3974,7 @@ PetscErrorCode System::FD_variables(Vec & U, Vec & alphaMax){
 			  perturb = dt;
 			  PerturbPETScVector(Ucopy, index, perturb );
 
-			  ObjFunctionTime(Ucopy,alphaMax);
+			  ObjFunctionTime(Ucopy,alphaMax,NumObjFunct);
 
 			  FD_partial_deriv = FunctionValue;
 
@@ -3988,7 +3982,7 @@ PetscErrorCode System::FD_variables(Vec & U, Vec & alphaMax){
 			  perturb = -2.0*dt;
 			  PerturbPETScVector(Ucopy, index, perturb);
 
-			  ObjFunctionTime(Ucopy,alphaMax);
+			  ObjFunctionTime(Ucopy,alphaMax,NumObjFunct);
 
 			  FD_partial_deriv -= FunctionValue;
 
@@ -4033,7 +4027,7 @@ PetscErrorCode System::FD_variables(Vec & U, Vec & alphaMax){
 	  return ierr;
 }
 
-PetscErrorCode System::FD_statevariables(Vec & U, Vec & alphaMax){
+PetscErrorCode System::FD_statevariables(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 
 
 	  PetscErrorCode ierr;
@@ -4078,7 +4072,7 @@ PetscErrorCode System::FD_statevariables(Vec & U, Vec & alphaMax){
 			  perturb = dt;
 			  PerturbPETScVector(alphaMaxCopy, e, perturb );
 
-			  ObjFunctionTime(U,alphaMaxCopy);
+			  ObjFunctionTime(U,alphaMaxCopy,NumObjFunct);
 
 			  FD_partial_deriv = FunctionValue;
 
@@ -4086,7 +4080,7 @@ PetscErrorCode System::FD_statevariables(Vec & U, Vec & alphaMax){
 			  perturb = -2.0*dt;
 			  PerturbPETScVector(alphaMaxCopy, e, perturb);
 
-			  ObjFunctionTime(U,alphaMaxCopy);
+			  ObjFunctionTime(U,alphaMaxCopy,NumObjFunct);
 
 			  FD_partial_deriv -= FunctionValue;
 
@@ -4582,6 +4576,8 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 		printf("Cannot open input_TargetArea.txt \n");
 		exit(-1);
 	}
+
+	CapitalOmega.resize(designData.N_ObjFunc);
 
 	/*
 	 * What kind of problem is it? Large or small deformations?

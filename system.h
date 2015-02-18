@@ -133,10 +133,10 @@ class System
 	PetscErrorCode CalculateObjFunction_P_Norm();
 	PetscErrorCode CalculateObjFunction_Simple();
 
-	PetscErrorCode ObjFunctionTime(Vec & U, Vec & alphaMax);
-	PetscErrorCode (System::*CalculateObjFunctionTime) (Vec & U, Vec & alphaMax);
-	PetscErrorCode CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax);
-	PetscErrorCode CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax);
+	PetscErrorCode ObjFunctionTime(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode (System::*CalculateObjFunctionTime) (Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 
 	PetscErrorCode ProcessObjFunctionTime();
 
@@ -181,25 +181,25 @@ class System
 	PetscErrorCode PartialDerivatives_P_Norm();
 	PetscErrorCode PartialDerivatives_Simple();
 
-	PetscErrorCode EvaluatePartialImplicitDerivatives(Vec & U, Vec & alphaMax);
-	PetscErrorCode EvaluatePartialExplicitDerivatives(Vec & U, Vec & alphaMax);
-	PetscErrorCode (System::*PartialImplicitDerivatives) (Vec & U, Vec & alphaMax);
-	PetscErrorCode (System::*PartialExplicitDerivatives) (Vec & U, Vec & alphaMax);
-	PetscErrorCode EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax);
-	PetscErrorCode EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax);
-	PetscErrorCode EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & alphaMax);
-	PetscErrorCode EvaluatePartialExplicitDerivatives_Simple(Vec & U, Vec & alphaMax);
+	PetscErrorCode EvaluatePartialImplicitDerivatives(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode EvaluatePartialExplicitDerivatives(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode (System::*PartialImplicitDerivatives) (Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode (System::*PartialExplicitDerivatives) (Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode EvaluatePartialImplicitDerivatives_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
+	PetscErrorCode EvaluatePartialExplicitDerivatives_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 
 	//PetscErrorCode PrintPartialDerivatives();
 
 	/*
 	 * Finite difference check
 	 */
-	PetscErrorCode FD_parameter(Vec & U, Vec & alphaMax);
+	PetscErrorCode FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 
-	PetscErrorCode FD_variables(Vec & U, Vec & alphaMax);
+	PetscErrorCode FD_variables(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 
-	PetscErrorCode FD_statevariables(Vec & U, Vec & alphaMax);
+	PetscErrorCode FD_statevariables(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 
 	PetscErrorCode RestartSolver();
 
@@ -281,6 +281,11 @@ class System
 	 */
 	PetscScalar * Mdot_product_result;
 
+	/*
+	 * Vector where we keep the coefficients for the derivatives
+	 * of each objective function
+	 */
+	std::vector<PetscReal> CapitalOmega;
 	/*
 	 * Implicit variables history
 	 */
