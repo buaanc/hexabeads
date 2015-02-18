@@ -45,7 +45,7 @@ class ProblemParameters
 			InitialVelocity = 0.1;
 
 
-			printstephistory = false;
+			printstephistory = true;
 
 
 

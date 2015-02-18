@@ -38,7 +38,7 @@ format long
 
 t_total = 6.206;
 %t_total = 4.206;
-t_total = 250
+t_total = 10;
 [obj_function_1,obj_function_ultimo,y_history,alphaMaxhistory ] ...
     = primal_problem(k1,k2,t_total,h,scale_factor,n_elem, densities,design_array);
 

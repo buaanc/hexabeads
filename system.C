@@ -144,10 +144,10 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 	k++;
 
 #ifdef DEBUG
-	std::cout<<"alphaMax RHS = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;
-	std::cout<<"delta RHS = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
-
-	std::cout<<"force coefficient = "<<sistema->elementFunction.force_coefficient()<<std::endl;
+//	std::cout<<"alphaMax RHS = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;
+//	std::cout<<"delta RHS = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
+//
+//	std::cout<<"force coefficient = "<<sistema->elementFunction.force_coefficient()<<std::endl;
 #endif
 
 	farr[offsetfrom] -= force_vector[0];
@@ -190,8 +190,8 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   	 farr[offsetfrom] = sistema->FunctionValue;
    }
 #ifdef DEBUG
-
-   	  std::cout<<"Obj Function RHS = "<<sistema->FunctionValue<<std::endl;
+//
+//   	  std::cout<<"Obj Function RHS = "<<sistema->FunctionValue<<std::endl;
 #endif
 
   ierr = VecRestoreArray(sistema->alphaMax,&alphaMaxarr);CHKERRQ(ierr);
@@ -269,9 +269,9 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 	  ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
 #ifdef DEBUG
-	  std::cout<<"primal time = "<<std::setprecision(20)<<ptime<<std::endl;
-	  std::cout<<"Solution"<<std::endl;
-	  VecView(U,PETSC_VIEWER_STDOUT_WORLD);
+//	  std::cout<<"primal time = "<<std::setprecision(20)<<ptime<<std::endl;
+//	  std::cout<<"Solution"<<std::endl;
+//	  VecView(U,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 
@@ -364,8 +364,8 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 		k++;
 
 #ifdef DEBUG
-		std::cout<<"delta = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
-		std::cout<<"_alphaMax = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;;
+//		std::cout<<"delta = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
+//		std::cout<<"_alphaMax = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;
 #endif
 
 
@@ -1789,13 +1789,13 @@ PetscErrorCode System::AdjointSolve(){
 												++alphaMaxVec_previous, ++Implicit_Variable_RkStage, ++Implicit_Variable_post ){
 		pasos++;
 #ifdef DEBUG
-		std::cout<<"Current time = "<<*CurrentTime<<std::endl;
-		std::cout<<"Lambda"<<std::endl;
-		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
-		std::cout<<"Mu"<<std::endl;
-		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
-		std::cout<<"Gamma-"<<std::endl;
-		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Current time = "<<*CurrentTime<<std::endl;
+//		std::cout<<"Lambda"<<std::endl;
+//		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Mu"<<std::endl;
+//		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Gamma-"<<std::endl;
+//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 //		std::cout<<"Time step = "<<*TimeStep<<std::endl;
 		h = *TimeStep;
@@ -1959,8 +1959,8 @@ PetscErrorCode System::AdjointSolve(){
 			VecMDot(Omega,local_N_parameters,JACP,Mdot_product_result);
 
 #ifdef DEBUG
-			for (int qq = 0; qq<local_N_parameters; qq++)
-				std::cout<<"Mdot_product_result = "<<Mdot_product_result[qq]<<std::endl;
+//			for (int qq = 0; qq<local_N_parameters; qq++)
+//				std::cout<<"Mdot_product_result = "<<Mdot_product_result[qq]<<std::endl;
 #endif
 			VecSetValues(V_i[i],local_N_parameters,parameters_indices,Mdot_product_result,ADD_VALUES);
 
@@ -1970,8 +1970,8 @@ PetscErrorCode System::AdjointSolve(){
 			VecAssemblyEnd(V_i[i]);
 
 #ifdef DEBUG
-			std::cout<<"V[i]"<<std::endl;
-			VecView(V_i[i],PETSC_VIEWER_STDOUT_WORLD);
+//			std::cout<<"V[i]"<<std::endl;
+//			VecView(V_i[i],PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 			VecSet(TMP,0.0);
@@ -2071,8 +2071,8 @@ PetscErrorCode System::AdjointSolve(){
 				PetscReal delta_adjoint = elementFunction.get_delta();
 
 #ifdef DEBUG
-				std::cout<<"alphaMax en adjoint = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
-				std::cout<<"delta_adjoint en adjoint = "<<delta_adjoint<<" element = "<<k<<std::endl;
+//				std::cout<<"alphaMax en adjoint = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
+//				std::cout<<"delta_adjoint en adjoint = "<<delta_adjoint<<" element = "<<k<<std::endl;
 #endif
 				/*
 				 * Now we need to build the vector that will apply to the linear operator
@@ -2093,13 +2093,13 @@ PetscErrorCode System::AdjointSolve(){
 				this->elementFunction.jacobian_alphaMax_vector_product(omega_local_U,result);
 
 #ifdef DEBUG
-				std::cout<<"result for tmpalpha element "<<k<<" = "<<result<<std::endl;
+//				std::cout<<"result for tmpalpha element "<<k<<" = "<<result<<std::endl;
 #endif
 
 				tmpalphamaxarr[k] -= result;
 #ifdef DEBUG
-				std::cout<<"producto del jacobiano"<<std::endl;
-				phi_local.print();
+//				std::cout<<"producto del jacobiano"<<std::endl;
+//				phi_local.print();
 #endif
 				/*
 				 * U variables
@@ -2186,19 +2186,19 @@ PetscErrorCode System::AdjointSolve(){
 		}
 
 #ifdef DEBUG
-		std::cout<<"Phi[i]"<<std::endl;
-		VecView(Phi[0],PETSC_VIEWER_STDOUT_WORLD);
-
-		std::cout<<"W_i[i]"<<std::endl;
-		VecView(W_i[0],PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Phi[i]"<<std::endl;
+//		VecView(Phi[0],PETSC_VIEWER_STDOUT_WORLD);
+//
+//		std::cout<<"W_i[i]"<<std::endl;
+//		VecView(W_i[0],PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 		ierr =  VecRestoreArrayRead(*alphaMaxVec,&alphaMaxarr);CHKERRQ(ierr);
 
 
 #ifdef DEBUG
-		std::cout<<"Gamma before alpha"<<std::endl;
-		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Gamma before alpha"<<std::endl;
+//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 		/*
@@ -2257,12 +2257,12 @@ PetscErrorCode System::AdjointSolve(){
 			this->elementFunction.calculate_delta();
 
 #ifdef DEBUG
-			std::cout<<"alphaMax en dHdalphaMax = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
-			std::cout<<"delta_adjoint en dHdalphaMax = "<<this->elementFunction.get_delta()<<" element = "<<k<<std::endl;
+//			std::cout<<"alphaMax en dHdalphaMax = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
+//			std::cout<<"delta_adjoint en dHdalphaMax = "<<this->elementFunction.get_delta()<<" element = "<<k<<std::endl;
 #endif
 			this->elementFunction.state_eq_product_alphaMax(gammaPrevarr[k],result);
 #ifdef DEBUG
-			std::cout<<"result for gamma = "<<result<<std::endl;
+//			std::cout<<"result for gamma = "<<result<<std::endl;
 #endif
 			gammaPrevarr[k] = result;
 
@@ -2275,8 +2275,8 @@ PetscErrorCode System::AdjointSolve(){
 		ierr = VecRestoreArray(Gamma,&gammaPrevarr);CHKERRQ(ierr);
 
 #ifdef DEBUG
-		std::cout<<"Gamma after alpha"<<std::endl;
-		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Gamma after alpha"<<std::endl;
+//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 		ierr = DMRestoreLocalVector(networkdm,&localLambda);CHKERRQ(ierr);
@@ -2295,8 +2295,8 @@ PetscErrorCode System::AdjointSolve(){
 		VecMAXPY(Mu,Stages,ones,V_i);CHKERRQ(ierr);
 
 #ifdef DEBUG
-		std::cout<<"Mu"<<std::endl;
-		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Mu"<<std::endl;
+//		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 //		std::cout<<"GammaPrev"<<std::endl;
@@ -2314,15 +2314,13 @@ PetscErrorCode System::AdjointSolve(){
 		 * Add the sum to Lambda
 		 */
 
-#ifdef DEBUG
-		std::cout<<"Gamma before lambda"<<std::endl;
-		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
-#endif
+//#ifdef DEBUG
+//		std::cout<<"Gamma before lambda"<<std::endl;
+//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 
-#ifdef DEBUG
-		std::cout<<"Lambda before gamma"<<std::endl;
-		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
-#endif
+//		std::cout<<"Lambda before gamma"<<std::endl;
+//		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
+//#endif
 
 
 		if (alphaMaxVec_previous != alphaMaxVec_end) {
@@ -2374,15 +2372,7 @@ PetscErrorCode System::AdjointSolve(){
 				U_i_to = uarr[offsetto + 2];
 				U_j_to = uarr[offsetto + 3];
 
-#ifdef DEBUG
-				std::cout<<"element = "<<k<<std::endl;
-				std::cout<<"vfrom = "<<vfrom<<std::endl;
-				std::cout<<"vto = "<<vto<<std::endl;
-				std::cout<<"offsetfrom + 2 = "<<offsetfrom+2<<std::endl;
-				std::cout<<"offsetfrom + 3 = "<<offsetfrom + 3<<std::endl;
-				std::cout<<"offsetto + 2 = "<<offsetto+2<<std::endl;
-				std::cout<<"offsetto + 3 = "<<offsetto + 3<<std::endl;
-#endif
+
 				// Reset the beads for the constitutive law object
 				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
 
@@ -2394,8 +2384,8 @@ PetscErrorCode System::AdjointSolve(){
 
 				PetscReal delta_adjoint = elementFunction.get_delta();
 #ifdef DEBUG
-				std::cout<<"alphaMax en adjoint PREVIOUS = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
-				std::cout<<"delta_adjoint en adjoint PREVIOUS = "<<delta_adjoint<<" element = "<<k<<std::endl;
+//				std::cout<<"alphaMax en adjoint PREVIOUS = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
+//				std::cout<<"delta_adjoint en adjoint PREVIOUS = "<<delta_adjoint<<" element = "<<k<<std::endl;
 #endif
 				this->elementFunction.state_eq_vector_product_U(gammaPrevarr[k],phi_local);
 
@@ -2405,11 +2395,11 @@ PetscErrorCode System::AdjointSolve(){
 				lambdaarr[offsetto + 3] 	+= phi_local(3);
 
 #ifdef DEBUG
-				std::cout<<"phi_local"<<std::endl;
-				phi_local.print();
-
-				if (phi_local(0) != 0)
-					std::cout<<"Transition reached element = "<<k<<std::endl;
+//				std::cout<<"phi_local"<<std::endl;
+//				phi_local.print();
+//
+//				if (phi_local(0) != 0)
+//					std::cout<<"Transition reached element = "<<k<<std::endl;
 #endif
 
 
@@ -2454,8 +2444,8 @@ PetscErrorCode System::AdjointSolve(){
 		}
 
 #ifdef DEBUG
-		std::cout<<"Lambda after gamma"<<std::endl;
-		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
+//		std::cout<<"Lambda after gamma"<<std::endl;
+//		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 

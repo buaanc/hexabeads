@@ -42,7 +42,7 @@
 ## 0 = no penalty added to cost function
 ## >0 = weight value
 #Weight
-1000
+0
 ## Space and Time norm parameter
 #Norm
 20
@@ -63,8 +63,8 @@
 ## Constraint type | maximum number of intruders | equality tolerance
 ## Note: if equality tolerance equals to zero => inequality constraint
 #Constraints
-1	30	0.1
-2	30	0.1
+1	60	0.1
+2	60	0.1
 ###############################
 ##  DESIGN VARIABLES         ##
 ###############################

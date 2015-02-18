@@ -3,7 +3,7 @@
 ###############################
 ## Total transient analysis time
 #totaltime
-250
+10
 ## Time step for implicit scheme
 #timestep
 0.2

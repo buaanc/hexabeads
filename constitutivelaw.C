@@ -805,9 +805,6 @@ void ConstitutiveLaw::partial_derivative_alphaMax_force_vector_plastic(){
 							+ h1*FMaxElastic*pow((_delta - _alphaP)/(_alphaMax - _alphaP),h1 - 1.0)*
 							(DalphaPDalphaM*(_delta - _alphaMax) - (_delta - _alphaP))/(pow(_alphaMax - _alphaP,2.0));
 
-#ifdef DEBUG
-					std::cout<<"_partial_derivative_alphaMax_coefficient = "<<_partial_derivative_alphaMax_coefficient<<std::endl;
-#endif
 				}
 				else
 				{
@@ -999,9 +996,6 @@ void ConstitutiveLaw::calculate_force_plastic_coefficients(){
 				//Yield criteria
 				if (Felastic < FPlastic - tol)
 				{
-#ifdef DEBUG
-						std::cout<<"AQUI ELASTIC"<<std::endl;
-#endif
 					// We need to get back the _alphaP corresponding to _alphaMax instead of _delta
 					alphaNorm = _alphaMax/_alphaY;
 					_alphaP = c1*_alphaMax - c2*_alphaY + c3*_alphaY*exp(-c4*(alphaNorm-1.0));
@@ -1444,9 +1438,6 @@ void ConstitutiveLaw::state_eq_partial_derivative_U_plastic(){
 					//Yield criteria
 					if (Felastic < FPlastic - tol)
 					{
-#ifdef DEBUG
-						std::cout<<"elastic en dh_du"<<std::endl;
-#endif
 						dh_dU(0) = 0.0;
 						dh_dU(1) = 0.0;
 
@@ -1455,9 +1446,6 @@ void ConstitutiveLaw::state_eq_partial_derivative_U_plastic(){
 					}
 					else
 					{
-#ifdef DEBUG
-						std::cout<<"plastic en dh_du"<<std::endl;
-#endif
 						dh_dU(0) = _unit_vector[0];
 						dh_dU(1) = _unit_vector[1];
 
