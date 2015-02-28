@@ -3,7 +3,7 @@ function [delta, alphaMax, force,...
     alphaMaxUnloading,delta_unloaded,...
     delta_plastic_regime, force_plastic_regime,...
     delta_elastic_regime, force_elastic_regime, alphaMax_elastic_regime,...
-    smoothed_delta, smoothed_force,alphaY] = reading_data(plotting)
+    smoothed_delta, smoothed_force] = validate_data(plotting,data,j)
 
 % ----------------- Material parameters -----------------------
 % Young Modulus
@@ -30,27 +30,7 @@ sigmayielding = 0.55; %Gpa
 alphaY = (pi/2)^2* (sigmayielding*1.6/EStar)^2 * RStar;
 
 
-%M = csvread('Dall.csv',1,7,[1 7 11870 8]);   
-
-CaseB=csvread('Dall.csv',1,0); % Case B: Loading-unloading data from 1.5 to 5.5 kN in 1 kN increments
-CaseE=csvread('All10kN.csv',1,0); % Case E: Load to and unload from 10 kN
-Load_CaseB=CaseB(:,2);Deformation_CaseB=CaseB(:,3); % Load and Deformation from Case B
-Load_CaseE=CaseE(:,1);Deformation_CaseE=CaseE(:,2); % "" Case E
-
-% Pick maximum for for Case B
-max_force = max(Load_CaseB);
-
-% Get the index where this force happens at case E
-indices = find(Load_CaseE > max_force);
-
-% Attach the portion of case E that is bigger than case B
-Load_CaseB = [Load_CaseB; Load_CaseE(indices(1):end)];
-Deformation_CaseB = [Deformation_CaseB; Deformation_CaseE(indices(1):end)];
-
-M(:,2) = Load_CaseB;
-M(:,1) = Deformation_CaseB;
-
-
+M = data;    
 
 if plotting == 1
     plot(M(:,1),M(:,2))
@@ -59,8 +39,10 @@ end
 smooth_parameter = 50;
 yy2 = smooth(M(:,2),smooth_parameter);
 xx2 = smooth(M(:,1),smooth_parameter); 
+
+
 if plotting == 1
-    plot(xx2,yy2, 'r')
+    plot(xx2,yy2, 'r*')
 
     xlabel('Strain')
     ylabel('Force')
@@ -89,8 +71,6 @@ locstrainpeak_min = [locstrainpeak_min; length(xx2)];
 % Clean the minima
 strainpks_min_clean = [];
 strainpks_min_index_clean = [];
-
-
 for j=2:length(strainpks_min)   
     if strainpks_min(j-1) < strainpks_min(j)
         strainpks_min_clean = [strainpks_min_clean strainpks_min(j-1)];
@@ -100,6 +80,11 @@ for j=2:length(strainpks_min)
         strainpks_min_clean = [strainpks_min_clean strainpks_min(j)];
         strainpks_min_index_clean = [strainpks_min_index_clean locstrainpeak_min(j)];
     end    
+end
+
+if length(strainpks_min) == 2
+    [strainpks_min_clean, index] = min(strainpks_min);
+    strainpks_min_index_clean = locstrainpeak_min(index);
 end
 
 strainpks_min = strainpks_min_clean;
@@ -218,26 +203,16 @@ for i=1:1:length(yield_index_array)
     force_plastic_regime(maximum_values_strain_indices(i):1:yield_index_array(i)) = 0;
     
     if i <= length(minimum_values_strain_indices)
-        
-        % Check which stretch the weak one
-        reloading = length(minimum_values_strain_indices(i):1:yield_index_array(i));
-        unloading = length(maximum_values_strain_indices(i):1:minimum_values_strain_indices(i));
-        
-        if unloading < 100
-            delta_elastic_regime{i} =xx2(minimum_values_strain_indices(i):1:yield_index_array(i));
-            alphaMax_elastic_regime{i} = alphaMax(minimum_values_strain_indices(i):1:yield_index_array(i));
-            force_elastic_regime{i} = force(minimum_values_strain_indices(i):1:yield_index_array(i));
-        elseif reloading < 100
-            delta_elastic_regime{i} =xx2(maximum_values_strain_indices(i):1:minimum_values_strain_indices(i));
-            alphaMax_elastic_regime{i} = alphaMax(maximum_values_strain_indices(i):1:minimum_values_strain_indices(i));
-            force_elastic_regime{i} = force(maximum_values_strain_indices(i):1:minimum_values_strain_indices(i));
-        else
-            delta_elastic_regime{i} =xx2(minimum_values_strain_indices(i):1:yield_index_array(i));
-            alphaMax_elastic_regime{i} = alphaMax(minimum_values_strain_indices(i):1:yield_index_array(i));
-            force_elastic_regime{i} = force(minimum_values_strain_indices(i):1:yield_index_array(i));
-        end
+        delta_elastic_regime{i} =xx2(minimum_values_strain_indices(i):1:yield_index_array(i));
+        alphaMax_elastic_regime{i} = alphaMax(minimum_values_strain_indices(i):1:yield_index_array(i));
+        force_elastic_regime{i} = force(minimum_values_strain_indices(i):1:yield_index_array(i));
     end
 end
+
+% If there are no reloading curves, we pick the unloading curve
+
+%if isempty(yield_index_array)
+
 % Include last unloading curve
 delta_plastic_regime(maximum_values_strain_indices(end):1:end) = 0;
 force_plastic_regime(maximum_values_strain_indices(end):1:end) = 0;
@@ -254,7 +229,10 @@ force_elastic_regime{end} = force(maximum_values_strain_indices(end):1:minimum_v
 %Remove zeros from the delta_plastic_regime and force_plastic_regime. This
 %is just removing the unloading/reloading sections.
 delta_plastic_regime(delta_plastic_regime == 0) = [];
-delta_plastic_regime = [0; delta_plastic_regime];
+
+if xx2(1) == 0
+    delta_plastic_regime = [0; delta_plastic_regime];
+end
 force_plastic_regime(force_plastic_regime == 0) = [];
 
 % With alphaP I intend do rule out the first section of the yielding curve,
@@ -340,6 +318,5 @@ if plotting == 1
     ylabel('Force')
     title('Cropped contact law')
 end
-
 
 end

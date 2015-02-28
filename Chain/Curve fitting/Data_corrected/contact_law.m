@@ -116,7 +116,7 @@ for i=1:1:n_delta
                 end
                 FMaxElastic = pAlpha*Anorm;
                 Felastic = FMaxElastic*((delta - alphaP)/(alphaMax - alphaP))^h1;
-
+                Felastic
                 %Plastic force
                 alphaNorm = delta/alphaY;
                 alphaP = c1*delta - c2*alphaY + c3*alphaY*exp(-c4*(alphaNorm-1.0));

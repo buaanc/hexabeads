@@ -1,4 +1,4 @@
-function Force_array = contact_law_plastic_regime(parameters,delta_array,plastic_param,delta_g1)
+function Force_array = contact_law_plastic_regime_first(parameters,delta_array)
 % ----------------- Material parameters -----------------------
 % Young Modulus
 E = 115; %Gpa
@@ -29,16 +29,11 @@ AreaY = pi*RStar*alphaY;
 
 
 % pAlpha = sigmayielding*_AreaY*(d1 - d2*exp(-d3*(alphaNorm-1.0)));
-d1 = plastic_param(1);
-d2 = plastic_param(2);
-d3 = plastic_param(3);
+d1 = parameters(1);
+d2 = parameters(2);
+d3 = parameters(3);
 % 	Anorm = pow(alphaNorm,1.137);
-e1 = plastic_param(4);
-%  Anorm = (f1*alphaNorm - f2);
-f1 = parameters(1);
-f2 = parameters(2);
-% alphaNorm < g1
-g1 = delta_g1;
+e1 = parameters(4);
 
 
 tol = 1e-10;
@@ -53,13 +48,7 @@ for i=1:1:n_delta
     alphaNorm = delta/alphaY;
     pAlpha =sigmayielding*AreaY*(d1 - d2*exp(-d3*(alphaNorm-1.0)));
     %DP = sigmayielding*AreaY*d2*d3*exp(-d3*(alphaNorm-1.0))/alphaY;
-    if (alphaNorm<g1)
-        Anorm = alphaNorm^e1;
-        %DA = 1.0/alphaY*e1*pow(alphaNorm,e1 - 1.0);
-    else
-        Anorm = (f1*alphaNorm - f2);
-        %DA = f1/alphaY;
-    end
+    Anorm = alphaNorm^e1;
     Force = pAlpha*Anorm;
     Force_array(i) = Force;
 end

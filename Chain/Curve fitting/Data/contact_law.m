@@ -5,7 +5,7 @@ E = 115; %Gpa
 nu = 0.3;
 % Same material for both beads
 E_to = E;
-E_from = E;
+E_from = 200;
 % Combined young modulus
 EStar = (E_to*E_from)/(E_to*(1.0-nu^2)+E_from*(1-nu^2));
 
@@ -13,7 +13,7 @@ EStar = (E_to*E_from)/(E_to*(1.0-nu^2)+E_from*(1-nu^2));
 R = 4.763; % mm
 % Same radius
 R_to = R;
-R_from = 1.79;
+R_from = (sqrt(2.0)-1.0)*R;
 %Combined radius
 RStar = (R_to*R_from)/(R_to+R_from);
 
