@@ -3,7 +3,7 @@
 ###############################
 ## Total transient analysis time
 #totaltime
-10
+100
 ## Time step for implicit scheme
 #timestep
 0.2
@@ -27,7 +27,7 @@
 ##  OBJECTIVE FUNCTION       ##
 ###############################
 #NumberOfObjectiveFunctions
-2
+1
 ## Objective goal | objective type
 ## Objective goal:
 ## Maximize = 1
@@ -46,7 +46,7 @@
 0
 ## Space and Time norm parameter
 #Norm
-14
+1
 ###############################
 ##  CONSTRAINT FUNCTION      ##
 ###############################

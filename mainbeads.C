@@ -77,11 +77,6 @@ int main(int argc,char ** argv)
 
 		ierr = QuadBeadsDummy.ProcessGradient();
 
-		if (QuadBeadsDummy.designData.N_ConstrFunc > 1){
-			ierr = QuadBeadsDummy.SRVConstraint();
-			ierr = QuadBeadsDummy.SRVConstraintGradient();
-		}
-
 		/*
 		 * Check sensitivities
 		 */
@@ -92,41 +87,41 @@ int main(int argc,char ** argv)
 	}
 	else{
 
-		SmartPtr<TNLP> OptProblem = new QuadBeads;
-
-
-		// Create a new instance of IpoptApplication
-		//  (use a SmartPtr, not raw)
-		// We are using the factory, since this allows us to compile this
-		// example with an Ipopt Windows DLL
-		SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
-		// Change some options
-		// Note: The following choices are only examples, they might not be
-		//       suitable for your optimization problem.
-		app->Options()->SetNumericValue("tol", 1e-6);
-		app->Options()->SetStringValue("mu_strategy", "adaptive");
-		app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-		// The following overwrites the default name (ipopt.opt) of the
-		// options file
-		// app->Options()->SetStringValue("option_file_name", "hs071.opt");
-
-		// Intialize the IpoptApplication and process the options
-		ApplicationReturnStatus status;
-		status = app->Initialize();
-		if (status != Solve_Succeeded) {
-		std::cout << std::endl << std::endl << "*** Error during initialization!" << std::endl;
-		return (int) status;
-		}
-
-		// Ask Ipopt to solve the problem
-		status = app->OptimizeTNLP(OptProblem);
-
-		if (status == Solve_Succeeded) {
-		std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
-		}
-		else {
-		std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
-		}
+//		SmartPtr<TNLP> OptProblem = new QuadBeads;
+//
+//
+//		// Create a new instance of IpoptApplication
+//		//  (use a SmartPtr, not raw)
+//		// We are using the factory, since this allows us to compile this
+//		// example with an Ipopt Windows DLL
+//		SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
+//		// Change some options
+//		// Note: The following choices are only examples, they might not be
+//		//       suitable for your optimization problem.
+//		app->Options()->SetNumericValue("tol", 1e-6);
+//		app->Options()->SetStringValue("mu_strategy", "adaptive");
+//		app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+//		// The following overwrites the default name (ipopt.opt) of the
+//		// options file
+//		// app->Options()->SetStringValue("option_file_name", "hs071.opt");
+//
+//		// Intialize the IpoptApplication and process the options
+//		ApplicationReturnStatus status;
+//		status = app->Initialize();
+//		if (status != Solve_Succeeded) {
+//		std::cout << std::endl << std::endl << "*** Error during initialization!" << std::endl;
+//		return (int) status;
+//		}
+//
+//		// Ask Ipopt to solve the problem
+//		status = app->OptimizeTNLP(OptProblem);
+//
+//		if (status == Solve_Succeeded) {
+//		std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
+//		}
+//		else {
+//		std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
+//		}
 
 	}
 

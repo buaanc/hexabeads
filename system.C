@@ -93,12 +93,24 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   	  std::cout<<"             "<<std::endl;
   	  std::cout<<"  RHS EVAL  "<<std::endl;
 	  std::cout<<"time = "<<t<<std::endl;
+
+	  std::cout<<"alphaMax en RHS"<<std::endl;
+	  VecView(sistema->alphaMax,PETSC_VIEWER_STDOUT_WORLD);
+
+
 #endif
 
 
   // Get the components of the alphaMax Vec
   VecGetArray(sistema->alphaMax,&alphaMaxarr);
   // Index for alphaMaxarr
+
+  /* Edge Data necessary to know which variable group it belongs to */
+  EDGEDATA elementData;
+  PetscInt key, offsetd_eStart;
+
+
+
   unsigned int k = 0;
 
   for (e=eStart; e < eEnd; e++) {
@@ -131,23 +143,43 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 	// Reset the beads for the constitutive law object
 	sistema->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, sistema->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
 
+
+
+	// Set initial design value, first, we need to know which variable group it belongs to
+	DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
+	elementData = (EDGEDATA)(arr + offsetd_eStart);
+	sistema->elementFunction.set_alphaP_initial(sistema->alphaMaxInit[elementData->VariableGroup]);
+
+#ifdef DEBUG
+			std::cout<<"variable value = "<<std::setprecision(10)<<sistema->alphaMaxInit[elementData->VariableGroup]<<std::endl;
+
+			double & alphaPInit = sistema->elementFunction.get_alphaP_initial();
+			std::cout<<"alphaP Init = "<<std::setprecision(10)<<alphaPInit<<std::endl;
+
+
+#endif
+
 	// Set the value of alphaMax
 	sistema->elementFunction.set_alphaMax(alphaMaxarr[k]);
 
 	sistema->elementFunction.calculate_delta();
 	PetscReal * force_vector = sistema->elementFunction.force_vector();
 
+
+
 #ifdef DEBUG
+
+	std::cout<<"Derivative Coef = "<<std::setprecision(10)<<sistema->elementFunction.get_derivative_force_coefficient()<<std::endl;
 	//sistema->elementFunction.check_jacobian();
 #endif
 
 	k++;
 
 #ifdef DEBUG
-//	std::cout<<"alphaMax RHS = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;
-//	std::cout<<"delta RHS = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
-//
-//	std::cout<<"force coefficient = "<<sistema->elementFunction.force_coefficient()<<std::endl;
+	std::cout<<"alphaMax RHS = "<<alphaMaxarr[k-1]<<" element = "<<k-1<<std::endl;
+	std::cout<<"delta RHS = "<<sistema->elementFunction.get_delta()<<" element = "<<k-1<<std::endl;
+
+	std::cout<<"force coefficient = "<<std::setprecision(20)<<sistema->elementFunction.force_coefficient()<<std::endl;
 #endif
 
 	farr[offsetfrom] -= force_vector[0];
@@ -194,9 +226,9 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   	 }
 
    }
+
 #ifdef DEBUG
-//
-//   	  std::cout<<"Obj Function RHS = "<<sistema->FunctionValue<<std::endl;
+   	  std::cout<<"Obj Function RHS = "<<sistema->FunctionValue<<std::endl;
 #endif
 
   ierr = VecRestoreArray(sistema->alphaMax,&alphaMaxarr);CHKERRQ(ierr);
@@ -204,7 +236,6 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   // We need to loop over the beads to multiply the farr vector (only the velocity components) with the inverse of the mass
   PetscInt vStart, vEnd, v;
   ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
   for (v=vStart; v < vEnd; v++) {
     PetscInt    offsetd,key;
     PetscReal mass;
@@ -214,7 +245,7 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 
 	ierr = DMNetworkGetVariableOffset(networkdm,v,&offsetfrom);CHKERRQ(ierr);
 
-	beadsdataFrom->get_mass(mass,sistema->designData.SIMP_parameter);
+	beadsdataFrom->get_mass(mass);
 
 
 
@@ -227,6 +258,10 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 
 	farr[offsetfrom] *= 1.0/mass;
 	farr[offsetfrom + 1] *= 1.0/mass;
+
+#ifdef DEBUG
+  std::cout<<"mass = "<<mass<<std::endl;
+#endif
   }
 
 
@@ -242,6 +277,11 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   ierr = DMLocalToGlobalEnd(networkdm,localF,ADD_VALUES,F);CHKERRQ(ierr);
   ierr = DMRestoreLocalVector(networkdm,&localF);CHKERRQ(ierr);
 
+
+#ifdef DEBUG
+  std::cout<<"F en RHS"<<std::endl;
+  VecView(F,PETSC_VIEWER_STDOUT_WORLD);
+#endif
 
   if (sistema->SaveStages)
 	  sistema->U_RungeKuttahistory.insert(U);
@@ -326,6 +366,10 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 		  std::cout<<"time = "<<ptime<<std::endl;
 #endif
 
+	  /* Edge Data necessary to know which variable group it belongs to */
+	  EDGEDATA elementData;
+	  PetscInt key, offsetd_eStart;
+
 
 	  // Index for alphaMaxarr
 	  unsigned int k = 0;
@@ -360,6 +404,11 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 
 		// Reset the beads for the constitutive law object
 		sistema->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, sistema->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+
+		// Set initial design value, first, we need to know which variable group it belongs to
+		DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
+		elementData = (EDGEDATA)(arr + offsetd_eStart);
+		sistema->elementFunction.set_alphaP_initial(sistema->alphaMaxInit[elementData->VariableGroup]);
 
 		// Set the value of alphaMax. We need to do this to update
 		sistema->elementFunction.set_alphaMax(alphaMaxarr[k]);
@@ -581,9 +630,6 @@ System::~System()
 
 	delete [] parameters_indices;
 
-	VecDestroy(&SRVGradient);
-	VecDestroy(&PenaltyGradient);
-
 	VecDestroyVecs(designData.N_DesignVariables,&JACP);
 
 	VecDestroy(&DN);
@@ -641,6 +687,7 @@ PetscErrorCode System::InitializeData()
 	  ierr = DMNetworkCreate(PETSC_COMM_WORLD,&networkdm);CHKERRQ(ierr);
 	  /* Register the components in the network */
 	  ierr = DMNetworkRegisterComponent(networkdm,"beadsdata",sizeof(class BeadsData),&componentkey[0]);CHKERRQ(ierr);
+	  ierr = DMNetworkRegisterComponent(networkdm,"globalindexedge",sizeof(struct _p_EDGEDATA),&componentkey[1]);CHKERRQ(ierr);
 
 	  ierr = PetscLogStageRegister("Read Data",&stage1);CHKERRQ(ierr);
 	  PetscLogStagePush(stage1);
@@ -684,8 +731,6 @@ PetscErrorCode System::InitializeData()
 	  ierr =PetscOptionsInt("-objfunction", "0 for simple obj function (sum of the displacements), 1 for the p-norm of the force","", 0, &designData.objfunctionType, NULL);
 	  ierr =PetscOptionsInt("-loading", "0 for prescribed displacement, 1 for loading","", 0, &problemData.loading, NULL);
 	  ierr =PetscOptionsInt("-matlabhistory", "0 for ignoring the time step history from matlab, 1 for using it","", 0, &problemData.matlabhistory, NULL);
-
-	  ierr =PetscOptionsScalar("-alphaMaxInit", "Initial value for the plastic deformation","", 0.0	, &designData.alphaMaxInitial, NULL);
 
 
 	  if (designData.objfunctionType == 1){
@@ -770,12 +815,20 @@ PetscErrorCode System::SetUpDMNetwork()
 		  ierr = DMNetworkAddNumVariables(networkdm,eStart,N);CHKERRQ(ierr);
 	  }
 
+	  /*
+	   * Add a component to each edge that will be the global index;
+	   */
+	  for (i = eStart; i < eEnd; i++) {
+	    ierr = DMNetworkAddComponent(networkdm,i,componentkey[1],&edgeData[i]);CHKERRQ(ierr);
+	  }
+
 	  /* Set up DM for use */
 	  ierr = DMSetUp(networkdm);CHKERRQ(ierr);
 
 	  /* We can delete the content of allbeadsData once it is set inside the DMNetwork*/
 	  if (!rank){
 	  	  PetscFree(allbeadsData);
+	  	  PetscFree(edgeData);
 	  }
 
 
@@ -801,22 +854,25 @@ PetscErrorCode System::SetUpDMNetwork()
 	  std::ifstream finitialValue("input_InitialVariableValues.txt");
 
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-				PetscInt   key;
-				ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-				// Cast component data
-				beadsdata = (arrayBeads)(arr + offsetd);
-				if (designData.initial_design != 0)
-					beadsdata->density_design = designData.initial_design;
-				else{
-					if (finitialValue.good())
-						finitialValue>>beadsdata->density_design;
-				}
-		  }
+
+		  PetscScalar design_value = 0;
+
+			if (designData.initial_design != 0)
+				design_value = designData.initial_design;
+			else{
+				if (finitialValue.good())
+					finitialValue>>design_value;
+			}
+		  alphaMaxInit.push_back(design_value);
+
+
 	  }
+
+//	  std::cout<<"size alphaMax = "<<alphaMaxInit.size()<<std::endl;
+//	  std::cout<<"N_DesignVariables = "<<designData.N_DesignVariables<<std::endl;
+//
+//	  std::cout<<"elemtns = "<<problemData.N_Elements<<std::endl;
+
 
 
 
@@ -886,7 +942,7 @@ PetscErrorCode System::CreatePETScObjects()
 	VecSetSizes(Felement,PETSC_DECIDE,problemData.N_Elements);
 	VecDuplicate(Felement,&alphaMax);
 
-	VecSet(alphaMax,designData.alphaMaxInitial);
+	InitialDesignSolution();
 	// We need to save the very first plastic deformation state
 	//this->alphaMaxhistory.insert(alphaMax);
 
@@ -927,15 +983,12 @@ PetscErrorCode System::CreatePETScObjects()
 	VecDuplicate(Mu,&dFdP);
 	VecDuplicate(Mu,&dFdP_partial);
 
+
 	/*
 	 * Number of parameters in this processor
 	 */
 	VecGetLocalSize(Mu,&local_N_parameters);
 	parameters_indices = new PetscInt[local_N_parameters];
-
-	VecDuplicate(Mu,&SRVGradient);
-	VecDuplicate(Mu,&PenaltyGradient);
-
 
 
 	/*
@@ -986,7 +1039,7 @@ PetscErrorCode System::SetUpSolver()
 	/*
 	 * Set initial plastic deformation to initial deformation
 	 */
-	VecSet(alphaMax,designData.alphaMaxInitial);
+	InitialDesignSolution();
 
 	/*
 	 * Error tolerances
@@ -1179,9 +1232,9 @@ PetscErrorCode System::FDSetUpSolver()
 	ierr = TSSetSolution(ts,X);CHKERRQ(ierr);
 
 	/*
-	 * Set initial plastic deformation to zero
+	 * Set initial plastic deformation to the design values
 	 */
-	VecSet(alphaMax,designData.alphaMaxInitial);
+	InitialDesignSolution();
 
 	/*
 	 * Error tolerances
@@ -1279,7 +1332,7 @@ PetscErrorCode System::Solve()
 
 }
 
-PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF,  PetscInt & DesignBeadNumber, Vec & alphaMax){
+PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF,  std::vector<PetscInt> & DesignElements, Vec & alphaMax){
 
 	  PetscErrorCode ierr;
 	  Vec           localU,localDF, localDN;
@@ -1305,172 +1358,47 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 
 	  PetscFunctionBeginUser;
-	  ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
-	  ierr = DMGetLocalVector(networkdm,&localDF);CHKERRQ(ierr);
-	  ierr = DMGetLocalVector(networkdm,&localDN);CHKERRQ(ierr);
+
+
 	  ierr = VecSet(DF,0.0);CHKERRQ(ierr);
 	  ierr = VecSet(DN,0.0);CHKERRQ(ierr);
 
+	  ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
 	  ierr = DMGlobalToLocalBegin(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
 	  ierr = DMGlobalToLocalEnd(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
+	  ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
 
-	  ierr = DMGlobalToLocalBegin(networkdm,DF,INSERT_VALUES,localDF);CHKERRQ(ierr);
-	  ierr = DMGlobalToLocalEnd(networkdm,DF,INSERT_VALUES,localDF);CHKERRQ(ierr);
 
+	  ierr = DMGetLocalVector(networkdm,&localDN);CHKERRQ(ierr);
 	  ierr = DMGlobalToLocalBegin(networkdm,DN,INSERT_VALUES,localDN);CHKERRQ(ierr);
 	  ierr = DMGlobalToLocalEnd(networkdm,DN,INSERT_VALUES,localDN);CHKERRQ(ierr);
-
-
-	  ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
-	  ierr = VecGetArray(localDF,&farr);CHKERRQ(ierr);
 	  ierr = VecGetArray(localDN,&dnarr);CHKERRQ(ierr);
+
+
+
 
 	  ierr = DMNetworkGetEdgeRange(networkdm,&eStart,&eEnd);CHKERRQ(ierr);
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 
+	  /*
+	   * Iterate through the elements
+	   */
 
+	  std::vector<PetscInt>::iterator first_element = DesignElements.begin();
+	  const std::vector<PetscInt>::iterator last_element = DesignElements.end();
 
+	  /* Edge Data necessary to know which variable group it belongs to */
+	  EDGEDATA elementData;
+	  PetscInt key, offsetd_eStart;
 
-	  // Get the components of the alphaMax Vec
 	  VecGetArray(alphaMax,&alphaMaxarr);
-	  // Index for alphaMaxarr
+
+
 	  unsigned int k = 0;
-
-	  /*
-	   * Correct the bead number index
-	   */
-
-	  PetscInt bead_id = DesignBeadNumber;
-	  // We need to correct the id to access the information in the DMNetwork
-	  bead_id += -1 + problemData.N_Elements;
-
-
-	  for (e=eStart; e < eEnd; e++) {
-	    PetscInt    offsetd,key;
-
-		const PetscInt *cone;
-		DMNetworkGetConnectedNodes(networkdm,e,&cone);
-		vfrom = cone[0];
-		vto   = cone[1];
-
-
-		ierr = DMNetworkGetComponentTypeOffset(networkdm,vfrom,0,&key,&offsetd);CHKERRQ(ierr);
-		// Cast component data
-		beadsdataFrom = (arrayBeads)(arr + offsetd);
-
-		ierr = DMNetworkGetComponentTypeOffset(networkdm,vto,0,&key,&offsetd);CHKERRQ(ierr);
-		// Cast component data
-		beadsdataTo = (arrayBeads)(arr + offsetd);
-
-		ierr = DMNetworkGetVariableOffset(networkdm,vfrom,&offsetfrom);CHKERRQ(ierr);
-		ierr = DMNetworkGetVariableOffset(networkdm,vto,&offsetto);CHKERRQ(ierr);
-
-
-		// Grab displacement components
-		U_i_from = uarr[offsetfrom + 2];
-		U_j_from = uarr[offsetfrom + 3];
-
-		U_i_to = uarr[offsetto + 2];
-		U_j_to = uarr[offsetto + 3];
-
-		// Reset the beads for the constitutive law object
-		this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
-
-		// Set the value of alphaMax
-		this->elementFunction.set_alphaMax(alphaMaxarr[k]);
-
-		this->elementFunction.calculate_delta();
-		PetscReal * force_vector = this->elementFunction.force_vector();
-		k++;
-
-		farr[offsetfrom] -= force_vector[0];
-		farr[offsetfrom + 1] -= force_vector[1];
-
-		farr[offsetfrom + 2] = 0.0;
-		farr[offsetfrom + 3] = 0.0;
-
-		farr[offsetto] -= force_vector[2];
-		farr[offsetto + 1] -= force_vector[3];
-
-		farr[offsetto + 2] = 0.0;
-		farr[offsetto + 3] = 0.0;
-
-		if (beadsdataFrom->constrained_dof_x){
-			farr[offsetfrom] = 0.0;
-			farr[offsetfrom + 2] = 0.0;
-		}
-		if (beadsdataFrom->constrained_dof_y){
-			farr[offsetfrom + 1] = 0.0;
-			farr[offsetfrom + 3] = 0.0;
-		}
-		if (beadsdataTo->constrained_dof_x){
-			farr[offsetto] = 0.0;
-			farr[offsetto + 2] = 0.0;
-		}
-		if (beadsdataTo->constrained_dof_y){
-			farr[offsetto + 1] = 0.0;
-			farr[offsetto + 3] = 0.0;
-		}
-	  }
-
-
-
-	  /*
-	   * We need to loop over the beads to multiply the farr vector (only the velocity components)
-	   * with the inverse of the mass. We need to have the contributions from all elements before
-	   * multiplying by this factor
-	   */
-	  PetscInt vStart, vEnd, v;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-	  for (v=vStart; v < vEnd; v++) {
-	    PetscInt    offsetd,key;
-		ierr = DMNetworkGetComponentTypeOffset(networkdm,v,0,&key,&offsetd);CHKERRQ(ierr);
-		// Cast component data
-		beadsdataFrom = (arrayBeads)(arr + offsetd);
-
-		ierr = DMNetworkGetVariableOffset(networkdm,v,&offsetfrom);CHKERRQ(ierr);
-
-		beadsdataFrom->get_mass(mass,this->designData.SIMP_parameter);
-
-		if (beadsdataFrom->type == 3){
-			PetscReal Fext;
-			this->problemData.get_external_force(t,Fext);
-			farr[offsetfrom + this->problemData.striker_DOF - 1] += Fext;
-		}
-
-		if (v == bead_id){
-
-
-			beadsdataFrom->get_mass_derivative(mass_derivative,this->designData.SIMP_parameter);
-
-			farr[offsetfrom] *= -1.0*mass_derivative/PetscPowScalarReal(mass,2.0);
-			farr[offsetfrom + 1] *= -1.0*mass_derivative/PetscPowScalarReal(mass,2.0);
-
-		}
-		else{
-			mass_derivative = 0.0;
-			farr[offsetfrom] *= -1.0*mass_derivative/PetscPowScalarReal(mass,2.0);
-			farr[offsetfrom + 1] *= -1.0*mass_derivative/PetscPowScalarReal(mass,2.0);
-
-		}
-
-
-	  }
-
-	  ierr = VecRestoreArray(localDF,&farr);CHKERRQ(ierr);
-	  ierr = DMLocalToGlobalBegin(networkdm,localDF,ADD_VALUES,DF);CHKERRQ(ierr);
-	  ierr = DMLocalToGlobalEnd(networkdm,localDF,ADD_VALUES,DF);CHKERRQ(ierr);
-	  ierr = DMRestoreLocalVector(networkdm,&localDF);CHKERRQ(ierr);
-
-	  /*
-	   * Second contribution, from the derivative of the internal force, only on those beads that are design variables
-	   */
-
-	  // Index for alphaMaxarr
-	  k = 0;
-	  for (e=eStart; e < eEnd; e++) {
+	  for (; first_element != last_element; ++first_element) {
 		  PetscInt    offsetd,key;
+
+		  e = *first_element - 1;
 
 		  const PetscInt *cone;
 		  DMNetworkGetConnectedNodes(networkdm,e,&cone);
@@ -1501,32 +1429,26 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 		  // Reset the beads for the constitutive law object
 		  this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
 
+		  // Set initial design value, first, we need to know which variable group it belongs to
+		  DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
+		  elementData = (EDGEDATA)(arr + offsetd_eStart);
+		  this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
 		  // Set the value of alphaMax
-		  this->elementFunction.set_alphaMax(alphaMaxarr[k]);
+
+
+		  this->elementFunction.set_alphaMax(alphaMaxarr[e]);
 
 		  this->elementFunction.calculate_delta();
 		  k++;
 
 
-		  if (beadsdataTo->design == 1 && vto == bead_id){
-			  unsigned int bead = 1;
-			  PetscReal * internal_force_derivative = this->elementFunction.internal_force_partial_derivative_P_bead(bead);
-			  dnarr[offsetfrom] += -1.0*internal_force_derivative[0];
-			  dnarr[offsetfrom + 1] += -1.0*internal_force_derivative[1];
+		  PetscReal * internal_force_derivative = this->elementFunction.internal_force_partial_derivative_P_bead();
+		  dnarr[offsetfrom] += -1.0*internal_force_derivative[0];
+		  dnarr[offsetfrom + 1] += -1.0*internal_force_derivative[1];
 
-			  dnarr[offsetto] += -1.0*internal_force_derivative[2];
-			  dnarr[offsetto + 1] += -1.0*internal_force_derivative[3];
-		  }
-
-		  if (beadsdataFrom->design == 1 && vfrom == bead_id ){
-			  unsigned int bead = 0;
-			  PetscReal * internal_force_derivative = this->elementFunction.internal_force_partial_derivative_P_bead(bead);
-			  dnarr[offsetfrom] += -1.0*internal_force_derivative[0];
-			  dnarr[offsetfrom + 1] += -1.0*internal_force_derivative[1];
-
-			  dnarr[offsetto] += -1.0*internal_force_derivative[2];
-			  dnarr[offsetto + 1] += -1.0*internal_force_derivative[3];
-		  }
+		  dnarr[offsetto] += -1.0*internal_force_derivative[2];
+		  dnarr[offsetto + 1] += -1.0*internal_force_derivative[3];
 
 		  /*
 		   * Add the constrained degrees of freedom contribution
@@ -1547,6 +1469,7 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 				dnarr[offsetto + 1] = 0.0;
 				dnarr[offsetto + 3] = 0.0;
 			}
+
 	  }
 
 	  /*
@@ -1554,8 +1477,8 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 	   * with the inverse of the mass. We need to have the contributions from all elements before
 	   * multiplying by this factor
 	   */
+	  PetscInt vStart, vEnd, v;
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 	  for (v=vStart; v < vEnd; v++) {
 	    PetscInt    offsetd,key;
 		ierr = DMNetworkGetComponentTypeOffset(networkdm,v,0,&key,&offsetd);CHKERRQ(ierr);
@@ -1564,7 +1487,7 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 		ierr = DMNetworkGetVariableOffset(networkdm,v,&offsetfrom);CHKERRQ(ierr);
 
-		beadsdataFrom->get_mass(mass,this->designData.SIMP_parameter);
+		beadsdataFrom->get_mass(mass);
 		dnarr[offsetfrom] *= 1.0/mass;
 		dnarr[offsetfrom + 1] *= 1.0/mass;
 	  }
@@ -1604,19 +1527,12 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 }
 
-PetscErrorCode System::RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & DF, PetscInt & DesignBeadNumber, Vec & alphaMax){
+PetscErrorCode System::RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & DF, PetscInt Design_Index, Vec & alphaMax){
 	  PetscErrorCode ierr;
 
 	  assert(_is_partial_derivatives_calculated && "Need to calculate the derivatives first");
 
-
-	  // Bead pointer
-	  arrayBeads DesignBead;
-	  DMNetworkComponentGenericDataType *arr;
-
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-
-	  PetscReal original_density;
+	  PetscReal original_design;
 	  PetscReal dt = 1e-8;
 
 	  // Vector for the FD partial derivatives for this time step
@@ -1625,55 +1541,44 @@ PetscErrorCode System::RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & 
 
 	  VecDuplicate(U,&Residual_partialP_FD_TWO);
 
-	  // We need to loop over the local vertices
-	  PetscInt vStart, vEnd;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
 
-
-	  PetscInt bead_id = DesignBeadNumber;
-	  // We need to correct the id to access the information in the DMNetwork
-	  bead_id += -1 + problemData.N_Elements;
 
 	  // Zero the vectors for a new calculation
 	  VecSet(Residual_partialP_FD,0.0);
 	  VecSet(Residual_partialP_FD_TWO,0.0);
-	  if (bead_id >= vStart && bead_id < vEnd){
-		  PetscInt    offsetd,key;
-		  /*
-		   * Get the data from these beads
-		   */
-		  ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-		  // Cast component data
-		  DesignBead = (arrayBeads)(arr + offsetd);
-
-		  // Change parameter data, first, keep original value
-		  original_density = DesignBead->density_design;
-		  DesignBead->density_design += dt;
-
-		  // Evaluate function
-		  FormRHSFunction(ts,t,U,Residual_partialP_FD,this);
-
-		  // Change the parameter again, now backwards
-		  DesignBead->density_design -= 2.0*dt;
 
 
-		  // Evaluate function
-		  FormRHSFunction(ts,t,U,Residual_partialP_FD_TWO,this);
+	  // Change parameter data, first, keep original value
+	  original_design = alphaMaxInit[Design_Index];
 
-		  // Final value
-		  VecAXPY(Residual_partialP_FD,-1.0,Residual_partialP_FD_TWO);
-		  PetscScalar alpha = 1.0/(2.0*dt);
-		  VecScale(Residual_partialP_FD,alpha);
 
-		  // Recover density value
-		  DesignBead->density_design = original_density;
-		  std::cout<<"/*-----------Comparing residual derivatives -------------*/"<<std::endl;
-		  std::cout<<"/*-- The first DOF of the FD is the objective function --*/"<<std::endl;
-		  std::cout<<"/*--------------------Analytical -----------------------*/"<<std::endl;
-		  VecView(DF,PETSC_VIEWER_STDOUT_WORLD);
-		  std::cout<<"/*--------------------------FD -------------------------*/"<<std::endl;
-		  VecView(Residual_partialP_FD,PETSC_VIEWER_STDOUT_WORLD);
-	  }
+	  alphaMaxInit[Design_Index] += dt;
+
+	  // Evaluate function
+	  FormRHSFunction(ts,t,U,Residual_partialP_FD,this);
+
+	  // Change the parameter again, now backwards
+	  alphaMaxInit[Design_Index] -= 2.0*dt;
+
+
+	  // Evaluate function
+	  FormRHSFunction(ts,t,U,Residual_partialP_FD_TWO,this);
+
+	  // Final value
+	  VecAXPY(Residual_partialP_FD,-1.0,Residual_partialP_FD_TWO);
+	  PetscScalar alpha = 1.0/(2.0*dt);
+	  VecScale(Residual_partialP_FD,alpha);
+
+	  // Recover density value
+	  alphaMaxInit[Design_Index]= original_design;
+
+
+	  std::cout<<"/*-----------Comparing residual derivatives -------------*/"<<std::endl;
+	  std::cout<<"/*-- The first DOF of the FD is the objective function --*/"<<std::endl;
+	  std::cout<<"/*--------------------Analytical -----------------------*/"<<std::endl;
+	  VecView(DF,PETSC_VIEWER_STDOUT_WORLD);
+	  std::cout<<"/*--------------------------FD -------------------------*/"<<std::endl;
+	  VecView(Residual_partialP_FD,PETSC_VIEWER_STDOUT_WORLD);
 
 
 
@@ -1792,6 +1697,12 @@ PetscErrorCode System::AdjointSolve(){
 	Vec U_RK_Stage;
 
 
+	/* Edge Data necessary to know which variable group it belongs to */
+	EDGEDATA elementData;
+	PetscInt key, offsetd_eStart;
+
+
+
 	unsigned int pasos = 0;
 
 	//TimeStepEnd--;
@@ -1800,13 +1711,13 @@ PetscErrorCode System::AdjointSolve(){
 												++alphaMaxVec_previous, ++Implicit_Variable_RkStage, ++Implicit_Variable_post ){
 		pasos++;
 #ifdef DEBUG
-//		std::cout<<"Current time = "<<*CurrentTime<<std::endl;
-//		std::cout<<"Lambda"<<std::endl;
-//		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
-//		std::cout<<"Mu"<<std::endl;
-//		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
-//		std::cout<<"Gamma-"<<std::endl;
-//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Current time = "<<*CurrentTime<<std::endl;
+		std::cout<<"Lambda"<<std::endl;
+		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Mu"<<std::endl;
+		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Gamma-"<<std::endl;
+		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 //		std::cout<<"Time step = "<<*TimeStep<<std::endl;
 		h = *TimeStep;
@@ -1820,11 +1731,15 @@ PetscErrorCode System::AdjointSolve(){
 		 * Get alphaMax info
 		 */
 		VecGetArrayRead(*alphaMaxVec,&alphaMaxarr);
-		/*
-		 * We need to copy the current alphaMaxVec to the sistema->alphaMax
-		 * because it will be used in FormRHSFunction
-		 */
-		VecCopy(*alphaMaxVec,alphaMax);
+
+
+		  if (problemData.finiteDifference){
+			  /*
+			   * We need to copy the current alphaMaxVec to the sistema->alphaMax
+			   * because it will be used in FormRHSFunction
+			   */
+			  VecCopy(*alphaMaxVec,alphaMax);
+		  }
 
 
 
@@ -1940,9 +1855,9 @@ PetscErrorCode System::AdjointSolve(){
 
 
 			for (PetscInt design_number = 0; design_number<local_N_parameters; design_number++){
-				RHSParameterDerivatives(time_RK,U_RK_Stage,JACP[design_number],design_beads[design_number],*alphaMaxVec);
+				RHSParameterDerivatives(time_RK,U_RK_Stage,JACP[design_number],design_elements[design_number],*alphaMaxVec);
 				if (problemData.finiteDifference){
-					RHSParameterDerivatives_FD(time_RK,U_RK_Stage,JACP[design_number],design_beads[design_number],*alphaMaxVec);
+					RHSParameterDerivatives_FD(time_RK,U_RK_Stage,JACP[design_number],design_number,*alphaMaxVec);
 				}
 			}
 
@@ -2043,7 +1958,7 @@ PetscErrorCode System::AdjointSolve(){
 
 				ierr = DMNetworkGetVariableOffset(networkdm,v,&offsetfrom);CHKERRQ(ierr);
 
-				beadsdataFrom->get_mass(mass,this->designData.SIMP_parameter);
+				beadsdataFrom->get_mass(mass);
 				omegaarr[offsetfrom] *= 1.0/mass;
 				omegaarr[offsetfrom + 1] *= 1.0/mass;
 			}
@@ -2082,9 +1997,12 @@ PetscErrorCode System::AdjointSolve(){
 				// Reset the beads for the constitutive law object
 				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
 
+				// Set initial design value, first, we need to know which variable group it belongs to
+				DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
+				elementData = (EDGEDATA)(arr + offsetd_eStart);
+				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
 				// Set the value of alphaMax. We need to do this to update
-
-
 				this->elementFunction.set_alphaMax(alphaMaxarr[k]);
 
 
@@ -2093,9 +2011,9 @@ PetscErrorCode System::AdjointSolve(){
 
 
 #ifdef DEBUG
-//				PetscReal delta_adjoint = elementFunction.get_delta();
-//				std::cout<<"alphaMax en adjoint = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
-//				std::cout<<"delta_adjoint en adjoint = "<<delta_adjoint<<" element = "<<k<<std::endl;
+				PetscReal delta_adjoint = elementFunction.get_delta();
+				std::cout<<"alphaMax en adjoint = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
+				std::cout<<"delta_adjoint en adjoint = "<<delta_adjoint<<" element = "<<k<<std::endl;
 #endif
 				/*
 				 * Now we need to build the vector that will apply to the linear operator
@@ -2220,8 +2138,8 @@ PetscErrorCode System::AdjointSolve(){
 
 
 #ifdef DEBUG
-//		std::cout<<"Gamma before alpha"<<std::endl;
-//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Gamma before alpha"<<std::endl;
+		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 		/*
@@ -2274,14 +2192,19 @@ PetscErrorCode System::AdjointSolve(){
 			// Reset the beads for the constitutive law object
 			this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
 
+			// Set initial design value, first, we need to know which variable group it belongs to
+			DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
+			elementData = (EDGEDATA)(arr + offsetd_eStart);
+			this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
 			// Set the value of alphaMax. We need to do this to update
 			this->elementFunction.set_alphaMax(alphaMaxarr[k]);
 
 			this->elementFunction.calculate_delta();
 
 #ifdef DEBUG
-//			std::cout<<"alphaMax en dHdalphaMax = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
-//			std::cout<<"delta_adjoint en dHdalphaMax = "<<this->elementFunction.get_delta()<<" element = "<<k<<std::endl;
+			std::cout<<"alphaMax en dHdalphaMax = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
+			std::cout<<"delta_adjoint en dHdalphaMax = "<<this->elementFunction.get_delta()<<" element = "<<k<<std::endl;
 #endif
 			this->elementFunction.state_eq_product_alphaMax(gammaPrevarr[k],result);
 #ifdef DEBUG
@@ -2298,8 +2221,8 @@ PetscErrorCode System::AdjointSolve(){
 		ierr = VecRestoreArray(Gamma,&gammaPrevarr);CHKERRQ(ierr);
 
 #ifdef DEBUG
-//		std::cout<<"Gamma after alpha"<<std::endl;
-//		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Gamma after alpha"<<std::endl;
+		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 		ierr = DMRestoreLocalVector(networkdm,&localLambda);CHKERRQ(ierr);
@@ -2318,8 +2241,8 @@ PetscErrorCode System::AdjointSolve(){
 		VecMAXPY(Mu,Stages,ones,V_i);CHKERRQ(ierr);
 
 #ifdef DEBUG
-//		std::cout<<"Mu"<<std::endl;
-//		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Mu"<<std::endl;
+		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 //		std::cout<<"GammaPrev"<<std::endl;
@@ -2399,6 +2322,11 @@ PetscErrorCode System::AdjointSolve(){
 				// Reset the beads for the constitutive law object
 				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
 
+				// Set initial design value, first, we need to know which variable group it belongs to
+				DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
+				elementData = (EDGEDATA)(arr + offsetd_eStart);
+				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
 				// Set the value of alphaMax. We need to do this to update
 				this->elementFunction.set_alphaMax(alphaMaxarr[k]);
 
@@ -2407,9 +2335,9 @@ PetscErrorCode System::AdjointSolve(){
 
 
 #ifdef DEBUG
-//				PetscReal delta_adjoint = elementFunction.get_delta();
-//				std::cout<<"alphaMax en adjoint PREVIOUS = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
-//				std::cout<<"delta_adjoint en adjoint PREVIOUS = "<<delta_adjoint<<" element = "<<k<<std::endl;
+				PetscReal delta_adjoint = elementFunction.get_delta();
+				std::cout<<"alphaMax en adjoint PREVIOUS = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
+				std::cout<<"delta_adjoint en adjoint PREVIOUS = "<<delta_adjoint<<" element = "<<k<<std::endl;
 #endif
 				this->elementFunction.state_eq_vector_product_U(gammaPrevarr[k],phi_local);
 
@@ -2468,8 +2396,8 @@ PetscErrorCode System::AdjointSolve(){
 		}
 
 #ifdef DEBUG
-//		std::cout<<"Lambda after gamma"<<std::endl;
-//		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
+		std::cout<<"Lambda after gamma"<<std::endl;
+		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 
@@ -2498,6 +2426,20 @@ PetscErrorCode System::AdjointSolve(){
 	return ierr;
 }
 
+PetscErrorCode System::ProcessGradient() {
+
+	PetscErrorCode ierr;
+
+	_is_gradient_calculated = true;
+
+
+	VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
+	VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
+	VecAXPY(Mu,1.0,Gamma);
+
+	return ierr;
+
+}
 
 PetscErrorCode System::PerturbPETScVector(Vec U, PetscInt & Index, PetscReal  & perturb){
 	PetscErrorCode ierr;
@@ -2576,6 +2518,10 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 	std::vector<int>::iterator 		target 	= designData.TargetArea_list[NumObjFunct].begin();
 	const std::vector<int>::iterator 	end 	= designData.TargetArea_list[NumObjFunct].end();
 
+	  /* Edge Data necessary to know which variable group it belongs to */
+	  EDGEDATA elementData;
+	  PetscInt key, offsetd_eStart;
+
 	for (; target != end; ++target){
 		// Only perform calculations if the element is within this processor
 
@@ -2639,6 +2585,13 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 
 					// Reset the beads for the constitutive law object
 					this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+
+					// Set initial design value, first, we need to know which variable group it belongs to
+					DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
+					elementData = (EDGEDATA)(arr + offsetd_eStart);
+					this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+
 					this->elementFunction.set_alphaMax(*alphaMaxarr);
 					this->elementFunction.calculate_delta();
 					PetscReal F_element_element = this->elementFunction.force_coefficient();
@@ -2831,38 +2784,11 @@ PetscErrorCode System::ProcessObjFunctionTime(){
 	FunctionValueGlobalBeforePenalty = FunctionValueGlobal;
 
 
-	/*
-	 * Call Penalty Term
-	 */
-
-	this->PenaltyTerm();
-
-	FunctionValueGlobal += this->PenaltyTermValue;
-
-
 	std::cout<<"FunctionValueGlobal = "<<std::setprecision(20)<<FunctionValueGlobal<<std::endl;
 
 	return ierr;
 }
 
-PetscErrorCode System::ProcessGradient(){
-	PetscErrorCode ierr;
-
-	_is_gradient_calculated = true;
-
-	/*
-	 * Call Penalty Term
-	 */
-	this->PenaltyTermGradient();
-
-
-	VecAXPY(Mu,1.0,PenaltyGradient);
-
-
-
-
-	return ierr;
-}
 
 PetscErrorCode System::CheckGradient(){
 
@@ -2884,15 +2810,8 @@ PetscErrorCode System::CheckGradient(){
 	ierr = VecGetArrayRead(Mu,&muarr);CHKERRQ(ierr);
 
 	std::cout<<"DO NOT RUN THIS IN PARALLEL"<<std::endl;
-	unsigned int k = 0;
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-			  std::cout<<"Gradient FD ["<<i<<"] = "<<std::setprecision(10)<<Gradient_FD[i]<<" Gradient ["<<i<<"] = "<<std::setprecision(10)<<muarr[k]<<std::endl;
-			  k++;
-		  }
+		  std::cout<<"Gradient FD ["<<i<<"] = "<<std::setprecision(10)<<Gradient_FD[i]<<" Gradient ["<<i<<"] = "<<std::setprecision(10)<<muarr[i]<<std::endl;
 	  }
 
 	ierr =  VecRestoreArrayRead(Mu,&muarr);CHKERRQ(ierr);
@@ -2982,6 +2901,12 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	// Derivative coefficient
 	PetscScalar deriv_coef = 0.0;
 
+	  /* Edge Data necessary to know which variable group it belongs to */
+	  EDGEDATA elementData;
+	  PetscInt key, offsetd_eStart;
+
+
+
 
 
 	for (; target != end; ++target){
@@ -3032,6 +2957,13 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 				// Reset the beads for the constitutive law object
 				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+
+				// Set initial design value, first, we need to know which variable group it belongs to
+				DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
+				elementData = (EDGEDATA)(arr + offsetd_eStart);
+				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+
 				this->elementFunction.set_alphaMax(*alphaMaxarr);
 				this->elementFunction.calculate_delta();
 
@@ -3181,6 +3113,9 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 	// Copy local vector to an array
 	ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
 
+	  /* Edge Data necessary to know which variable group it belongs to */
+	  EDGEDATA elementData;
+	  PetscInt key, offsetd_eStart;
 
 	for (; target != end; ++target){
 		// Only perform calculations if the element is within this processor
@@ -3228,6 +3163,12 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 				// Reset the beads for the constitutive law object
 				this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+
+				// Set initial design value, first, we need to know which variable group it belongs to
+				DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
+				elementData = (EDGEDATA)(arr + offsetd_eStart);
+				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
 				this->elementFunction.set_alphaMax(*alphaMaxarr);
 				this->elementFunction.calculate_delta();
 
@@ -3240,16 +3181,11 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 				/*
 				 * Partial derivative w.r.t parameter
 				 */
-				if (beadsdataFrom->design == 1){
-					PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
-					PetscScalar value = deriv_coef*partialF_partialP_element[0];
-					VecSetValue(dFdP_partial,beadsdataFrom->design_index,value,ADD_VALUES);
-				}
-				if(beadsdataTo->design == 1){
-					PetscReal * partialF_partialP_element = this->elementFunction.partial_derivative_P();
-					PetscScalar value = deriv_coef*partialF_partialP_element[1];
-					VecSetValue(dFdP_partial,beadsdataTo->design_index,value,ADD_VALUES);
-				}
+
+				PetscReal & partialF_partialP_element = this->elementFunction.partial_derivative_P();
+				PetscScalar value = deriv_coef*partialF_partialP_element;
+				VecSetValue(dFdP_partial,elementData->VariableGroup,value,ADD_VALUES);
+
 		}
 
 	}
@@ -3437,6 +3373,12 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 
 		VecSet(Felement,0.0);
 
+		  /* Edge Data necessary to know which variable group it belongs to */
+		  EDGEDATA elementData;
+		  PetscInt key, offsetd_eStart;
+
+
+
 		for (PetscInt i = 0; i<designData.N_ObjFunc; i++){
 
 			std::vector<int>::iterator 		target 	= designData.TargetArea_list[i].begin();
@@ -3458,7 +3400,7 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 							PetscInt elementIndex = *target - 1;
 
 							VecGetValues(alphaMax,1,&elementIndex,alphaMaxarr);
-							PetscInt    offsetd,key;
+							PetscInt    offsetd;
 
 
 							// Beads that belong to this element/contact
@@ -3505,6 +3447,12 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 
 							// Reset the beads for the constitutive law object
 							this->elementFunction.reset_beads(*beadsdataFrom,*beadsdataTo, this->problemData.analysis,U_i_from, U_j_from, U_i_to, U_j_to);
+
+							// Set initial design value, first, we need to know which variable group it belongs to
+							DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
+							elementData = (EDGEDATA)(arr + offsetd_eStart);
+							this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
 							this->elementFunction.set_alphaMax(*alphaMaxarr);
 							this->elementFunction.calculate_delta();
 							PetscReal F_element_element = this->elementFunction.force_coefficient();
@@ -3556,304 +3504,8 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 
 		return ierr;
 }
-PetscErrorCode System::VolumeConstraint(){
 
-	  PetscErrorCode ierr;
-	  PetscInt    offsetd;
-	  DMNetworkComponentGenericDataType *arr;
-	  arrayBeads beadsdata;
-	  // We need to loop over the local vertices
-	  PetscInt vStart, vEnd;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 
-
-	  LocalVolConstraintValue = 0.0;
-	  VolConstraintValue = 0.0;
-	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-				PetscInt   key;
-				ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-				// Cast component data
-				beadsdata = (arrayBeads)(arr + offsetd);
-
-				LocalVolConstraintValue += beadsdata->density_design;
-		  }
-
-	  }
-
-
-	  // Gather values for the objective functions
-	  MPI_Allreduce(&LocalVolConstraintValue, &VolConstraintValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
-
-
-
-	  VolConstraintValue *= 1.0/(NormalizedValue[0]);
-
-	  return ierr;
-
-}
-
-void System::VolumeConstraintGradient(){
-
-
-
-	  VolGradient = arma::ones<arma::colvec>(designData.N_DesignVariables);
-
-	  VolGradient *= 1.0/(NormalizedValue[0]);
-
-
-}
-
-PetscErrorCode System::SRVConstraint(){
-	  PetscErrorCode ierr;
-	  PetscInt    offsetd;
-	  DMNetworkComponentGenericDataType *arr;
-	  arrayBeads beadsdata;
-	  // We need to loop over the local vertices
-	  PetscInt vStart, vEnd;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-
-
-	  LocalSRVConstraintValue = 0.0;
-	  SRVConstraintValue = 0.0;
-	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-			PetscInt   key;
-			ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-			// Cast component data
-			beadsdata = (arrayBeads)(arr + offsetd);
-
-			LocalSRVConstraintValue += 1.0/beadsdata->density_design;
-		  }
-	  }
-
-
-	  // Gather values for the objective functions
-	  MPI_Allreduce(&LocalSRVConstraintValue, &SRVConstraintValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
-
-	  SRVConstraintValue *= 1.0/(NormalizedValue[1]);
-
-
-	  return ierr;
-
-
-
-}
-
-PetscErrorCode System::SRVConstraintGradient(){
-
-
-	  PetscErrorCode ierr;
-	  PetscInt    offsetd;
-	  DMNetworkComponentGenericDataType *arr;
-	  arrayBeads beadsdata;
-	  // We need to loop over the local vertices
-	  PetscInt vStart, vEnd;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-
-
-	  PetscScalar * srvarr;
-	  VecGetArray(SRVGradient,&srvarr);
-	  PetscInt k = 0;
-	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-			PetscInt   key;
-			ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-			// Cast component data
-			beadsdata = (arrayBeads)(arr + offsetd);
-
-			srvarr[k] = -1.0/pow(beadsdata->density_design,2.0);
-			k++;
-		  }
-
-	  }
-
-	  VecRestoreArray(SRVGradient,&srvarr);
-
-	  VecScale(SRVGradient,1.0/(NormalizedValue[1]));
-
-
-	  return ierr;
-
-}
-
-PetscErrorCode System::FD_SRV(){
-	  PetscErrorCode ierr;
-
-	  assert(_is_partial_derivatives_calculated && "Need to calculate the derivatives first");
-
-	  // Bead pointer
-	  arrayBeads DesignBead;
-	  DMNetworkComponentGenericDataType *arr;
-
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-
-	  PetscReal original_density;
-	  PetscReal dt = 1e-8;
-
-	  // Vector for the FD partial derivatives for this time step
-	  Vec SRV_Gradient_FD;
-	  VecDuplicate(Mu,&SRV_Gradient_FD);
-	  PetscScalar * SRV_Gradient_FD_arr;
-
-	  // Zero the partialF_partialU_FD, we recycle it on each iteration
-	  VecSet(SRV_Gradient_FD,0.0);
-	  ierr = VecGetArray(SRV_Gradient_FD,&SRV_Gradient_FD_arr);
-
-	  std::cout<<" /*----------------------------------------------------*/ "<<std::endl;
-	  std::cout<<" 					Comparing FD of the SRV				 "<<std::endl;
-	  std::cout<<" /*----------------------------------------------------*/ "<<std::endl;
-	  // We need to loop over the local vertices
-	  PetscInt vStart, vEnd;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-			  PetscReal SRVValue = 0.0;
-			  PetscInt    offsetd,key;
-			  /*
-			   * Get the data from these beads
-			   */
-			  ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-			  // Cast component data
-			  DesignBead = (arrayBeads)(arr + offsetd);
-
-			  // Change parameter data, first, keep original value
-			  original_density = DesignBead->density_design;
-			  DesignBead->density_design += dt;
-
-			  // Evaluate function
-			  SRVConstraint();
-			  SRVValue = SRVConstraintValue;
-
-			  // Change the parameter again, now backwards
-			  DesignBead->density_design -= 2*dt;
-
-
-			  // Evaluate function
-			  SRVConstraint();
-			  SRVValue -= SRVConstraintValue;
-
-			  // Final value
-			  SRVValue *= 1.0/(2.0*dt);
-
-			  // Recover density value
-			  DesignBead->density_design = original_density;
-
-			  // Insert value
-			  SRV_Gradient_FD_arr[i] = SRVValue;
-
-		  }
-	  }
-	  ierr = VecRestoreArray(SRV_Gradient_FD,&SRV_Gradient_FD_arr);
-	  ierr = VecAssemblyBegin(SRV_Gradient_FD);
-	  ierr = VecAssemblyEnd(SRV_Gradient_FD);
-	  std::cout<<"/*--------------------Analytical -----------------------*/"<<std::endl;
-	  VecView(SRVGradient,PETSC_VIEWER_STDOUT_WORLD);
-	  std::cout<<"/*--------------------------FD -------------------------*/"<<std::endl;
-	  VecView(SRV_Gradient_FD,PETSC_VIEWER_STDOUT_WORLD);
-
-	  VecDestroy(&SRV_Gradient_FD);
-
-
-
-	  return ierr;
-
-}
-
-PetscErrorCode System::PenaltyTerm(){
-
-	  PetscErrorCode ierr;
-		  PetscInt    offsetd;
-		  DMNetworkComponentGenericDataType *arr;
-		  arrayBeads beadsdata;
-		  // We need to loop over the local vertices
-		  PetscInt vStart, vEnd;
-		  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-		  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-
-
-		  LocalPenaltyTermValue = 0.0;
-		  PenaltyTermValue = 0.0;
-		  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-			  PetscInt bead_id = design_beads[i];
-			  // We need to correct the id to access the information in the DMNetwork
-			  bead_id += -1 + problemData.N_Elements;
-			  if (bead_id >= vStart && bead_id < vEnd){
-				PetscInt   key;
-				ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-				// Cast component data
-				beadsdata = (arrayBeads)(arr + offsetd);
-
-				LocalPenaltyTermValue += (1.0 - beadsdata->density_design)*(beadsdata->density_design - designData.volfrac_min);
-
-			  }
-		  }
-
-
-		  // Gather values for the objective functions
-		  MPI_Allreduce(&LocalPenaltyTermValue, &PenaltyTermValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
-
-		  PenaltyTermValue *= designData.penalty_weight;
-
-		  return ierr;
-}
-PetscErrorCode System::PenaltyTermGradient(){
-
-
-	  PetscErrorCode ierr;
-	  PetscInt    offsetd;
-	  DMNetworkComponentGenericDataType *arr;
-	  arrayBeads beadsdata;
-	  // We need to loop over the local vertices
-	  PetscInt vStart, vEnd;
-	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
-	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
-
-
-
-	  PetscScalar * penaltyarr;
-	  VecGetArray(PenaltyGradient,&penaltyarr);
-	  PetscInt k = 0;
-	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
-			  PetscInt   key;
-			  ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-			  // Cast component data
-			  beadsdata = (arrayBeads)(arr + offsetd);
-
-			  penaltyarr[k] = -1.0*(beadsdata->density_design - designData.volfrac_min) + (1.0 - beadsdata->density_design);
-			  k++;
-		  }
-	  }
-
-	  VecRestoreArray(PenaltyGradient,&penaltyarr);
-
-	  VecScale(PenaltyGradient,designData.penalty_weight);
-
-
-
-
-	  return ierr;
-
-}
 
 PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct){
 	  PetscErrorCode ierr;
@@ -3866,7 +3518,7 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 
-	  PetscReal original_density;
+	  PetscReal original_design;
 	  PetscReal dt = 1e-8;
 
 	  // Vector for the FD partial derivatives for this time step
@@ -3885,29 +3537,22 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  PetscInt vStart, vEnd;
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
+
 			  PetscReal FD_partial_deriv = 0.0;
 			  PetscInt    offsetd,key;
-			  /*
-			   * Get the data from these beads
-			   */
-			  ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-			  // Cast component data
-			  DesignBead = (arrayBeads)(arr + offsetd);
+
 
 			  // Change parameter data, first, keep original value
-			  original_density = DesignBead->density_design;
-			  DesignBead->density_design += dt;
+			  original_design = alphaMaxInit[i];
+
+			  alphaMaxInit[i] += dt;
 
 			  // Evaluate function
 			  ObjFunctionTime(U,alphaMax,NumObjFunct);
 			  FD_partial_deriv = FunctionValue;
 
 			  // Change the parameter again, now backwards
-			  DesignBead->density_design -= 2.0*dt;
+			  alphaMaxInit[i] -= 2.0*dt;
 
 
 			  // Evaluate function
@@ -3918,12 +3563,10 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 			  FD_partial_deriv *= 1.0/(2.0*dt);
 
 			  // Recover density value
-			  DesignBead->density_design = original_density;
+			  alphaMaxInit[i] = original_design;
 
 			  // Insert value
 			  dFdp_FD_arr[i] = FD_partial_deriv;
-
-		  }
 	  }
 	  ierr = VecRestoreArray(partialF_partialP_FD,&dFdp_FD_arr);
 	  ierr = VecAssemblyBegin(partialF_partialP_FD);
@@ -4139,7 +3782,7 @@ PetscErrorCode System::RestartSolver()
 	/*
 	 * Set initial plastic deformation to zero
 	 */
-	VecSet(alphaMax,designData.alphaMaxInitial);
+	InitialDesignSolution();
 
 	/*
 	 * Clear history
@@ -4189,7 +3832,7 @@ PetscErrorCode System::FiniteDifference(){
 
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 
-	  PetscReal original_density;
+	  PetscReal original_design;
 	  PetscReal dt = 1e-8;
 
 	  /*
@@ -4208,21 +3851,13 @@ PetscErrorCode System::FiniteDifference(){
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
 
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-		  PetscInt bead_id = design_beads[i];
-		  // We need to correct the id to access the information in the DMNetwork
-		  bead_id += -1 + problemData.N_Elements;
-		  if (bead_id >= vStart && bead_id < vEnd){
 			  PetscInt    offsetd,key;
-			  /*
-			   * Get the data from these beads
-			   */
-			  ierr = DMNetworkGetComponentTypeOffset(networkdm,bead_id,0,&key,&offsetd);CHKERRQ(ierr);
-			  // Cast component data
-			  DesignBead = (arrayBeads)(arr + offsetd);
+
 
 			  // Change parameter data, first, keep original value
-			  original_density = DesignBead->density_design;
-			  DesignBead->density_design += dt;
+			  original_design = alphaMaxInit[i];
+
+			  alphaMaxInit[i] += dt;
 
 			  //Gradient_FD[i] = -1.0*FunctionValueGlobalOriginal;
 			  RestartSolver();
@@ -4239,7 +3874,7 @@ PetscErrorCode System::FiniteDifference(){
 			  Gradient_FD[i] = FunctionValueGlobal;
 
 			  // Change the parameter again, now backwards
-			  DesignBead->density_design -= 2.0*dt;
+			  alphaMaxInit[i] -= 2.0*dt;
 
 			  RestartSolver();
 			  /*
@@ -4258,11 +3893,10 @@ PetscErrorCode System::FiniteDifference(){
 			  Gradient_FD[i] *= 1.0/(2.0*dt);
 
 			  // Recover density value
-			  DesignBead->density_design = original_density;
+			  alphaMaxInit[i] = original_design;
 
 			  if (rank == 0)
 				  std::cout<<std::setprecision(10)<<" dFdP_FD["<<i<<"] = "<<Gradient_FD[i]<<std::endl;
-		  }
 	  }
 
 	  RestartSolver();
@@ -4279,13 +3913,6 @@ PetscErrorCode System::FiniteDifference(){
 
 
 
-	/*
-	 * Call SRV FD check
-	 */
-
-	if (designData.N_ConstrFunc > 1){
-		FD_SRV();
-	}
 	  return ierr;
 
 
@@ -4315,17 +3942,13 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 
 
 
-	if (data_directory.compare("large") == 0){
-		directory = "Data_10_by_11";
+	if (data_directory.compare("hex") == 0){
+		directory = "Hexagonal";
 		std::cout<<"Reading data for large problem"<<std::endl;
 	}
 	else if (data_directory.compare("chain") == 0){
 		directory = "Chain";
 		std::cout<<"Reading data for chain problem"<<std::endl;
-	}
-	else{
-		directory = "Data_3_by_2";
-		std::cout<<"Reading data for small problem"<<std::endl;
 	}
 
 	/*************************************************************************/
@@ -4439,7 +4062,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 	/*                         Nodal Information                             */
 	/*************************************************************************/
 	std::ifstream finp_nodes(nodes.c_str());
-	designData.N_DesignVariables = 0;
+
 	if (finp_nodes.is_open()) {
 		finp_nodes>>problemData.N_Nodes;
 		ierr = PetscMalloc(problemData.N_Nodes*sizeof(class BeadsData),&_arrayBeads);
@@ -4455,13 +4078,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 			_arrayBeads[i].coordy *= 1e3;
 			_arrayBeads[i].coordz *= 1e3;
 
-			finp_nodes>>_arrayBeads[i].type>>_arrayBeads[i].design>>_arrayBeads[i].E>>_arrayBeads[i].rho>>_arrayBeads[i].nu>>_arrayBeads[i].R;
-
-			if (_arrayBeads[i].design == 1){
-				_arrayBeads[i].design_index = designData.N_DesignVariables;
-				designData.N_DesignVariables++;
-				design_beads.push_back(_arrayBeads[i].node_id);
-			}
+			finp_nodes>>_arrayBeads[i].type>>_arrayBeads[i].E>>_arrayBeads[i].rho>>_arrayBeads[i].nu>>_arrayBeads[i].R;
 
 			//Scaling
 			_arrayBeads[i].E   = _arrayBeads[i].E*1e-9;
@@ -4482,13 +4099,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 		exit(-1);
 	}
 
-	/*
-	 * Set the number of variables for the arrays
-	 */
-	Mdot_product_result = new PetscScalar[designData.N_DesignVariables];
 
-	for (unsigned int i = 0; i<designData.N_DesignVariables; i++)
-		Mdot_product_result[i] = 0.0;
 
 
 	/*************************************************************************/
@@ -4497,6 +4108,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 	std::ifstream finp_elem(elements.c_str());
 	if (finp_elem.is_open()) {
 		finp_elem>>problemData.N_Elements;
+		ierr = PetscMalloc(problemData.N_Elements*sizeof(struct _p_EDGEDATA),&edgeData);
 		problemData.connectivity = new int[2*problemData.N_Elements];
 		unsigned int element_id;
 		PetscReal alpha;
@@ -4507,12 +4119,34 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 			finp_elem>>problemData.connectivity[2*i+1];
 			problemData.connectivity[2*i+1] -= 1;
 			finp_elem>>alpha;
+
+			edgeData[i].VariableGroup = alpha - 1;
+
+			if (design_elements.size() < alpha){
+				std::vector<PetscInt> dummy;
+				design_elements.push_back(dummy);
+				design_elements[alpha - 1].push_back(element_id);
+			}
+			else{
+				design_elements[alpha - 1].push_back(element_id);
+			}
 		}
 		finp_elem.close();
 	} else {
 		printf("Cannot open input_Elements.txt \n");
 		exit(-1);
 	}
+
+
+	designData.N_DesignVariables = design_elements.size();
+
+	/*
+	 * Set the number of variables for the arrays
+	 */
+	Mdot_product_result = new PetscScalar[designData.N_DesignVariables];
+
+	for (unsigned int i = 0; i<designData.N_DesignVariables; i++)
+		Mdot_product_result[i] = 0.0;
 
 	/*************************************************************************/
 	/*                         Constraint Information                        */
@@ -4627,11 +4261,6 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 	ierr =PetscOptionsInt("-printdisplacements", "1 to print displacements","", 0, &problemData.printdisplacements, NULL);
 
 
-	NormalizedValue.resize(designData.N_ConstrFunc);
-	if (designData.N_ConstrFunc > 0)
-		NormalizedValue[0] = designData.ConstraintsBounds[0] + ((PetscReal)designData.N_DesignVariables - designData.ConstraintsBounds[0])*designData.volfrac_min;
-	if (designData.N_ConstrFunc > 1)
-		NormalizedValue[1] = designData.ConstraintsBounds[1] + ((PetscReal)designData.N_DesignVariables - designData.ConstraintsBounds[1])/designData.volfrac_min;
 
 
 
@@ -4704,7 +4333,38 @@ PetscErrorCode System::InitialSolution(DM networkdm,Vec X)
 }
 
 
+PetscErrorCode System::InitialDesignSolution(){
 
+	PetscErrorCode ierr;
+
+
+	PetscScalar * alphaMaxarr;
+
+
+	VecGetArray(alphaMax, &alphaMaxarr);
+
+	/* Edge Data necessary to know which variable group it belongs to */
+	EDGEDATA elementData;
+	PetscInt key, offsetd_eStart;
+	DMNetworkComponentGenericDataType * arr;
+	ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
+
+
+
+	for (unsigned int i = 0; i < problemData.N_Elements; i++){
+
+		// Set initial design value, first, we need to know which variable group it belongs to
+		DMNetworkGetComponentTypeOffset(networkdm,i,0,&key,&offsetd_eStart);
+		elementData = (EDGEDATA)(arr + offsetd_eStart);
+
+		alphaMaxarr[i] = alphaMaxInit[elementData->VariableGroup];
+
+	}
+
+	VecRestoreArray(alphaMax, &alphaMaxarr);
+
+
+}
 
 
 

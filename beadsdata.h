@@ -22,11 +22,6 @@ class BeadsData
 		// Material properties and coordinates
 		double E, R, rho, nu, coordx, coordy, coordz, density_design;
 
-		// Whether it is an intruder or not
-		unsigned int design;
-		// Design variable index
-		unsigned int design_index;
-
 		// type = 1, regular bead; type = 2, wall (completely constrained); type = 3, striker
 		unsigned int type, node_id;
 
@@ -44,27 +39,17 @@ class BeadsData
 			std::cout<<"coordx = "<<coordx<<std::endl;
 			std::cout<<"coordy = "<<coordy<<std::endl;
 			std::cout<<"type = "<<type<<std::endl;
-			std::cout<<"design = "<<design<<std::endl;
 			std::cout<<"constrained_dof_x = "<<constrained_dof_x<<std::endl;
 			std::cout<<"constrained_dof_y = "<<constrained_dof_y<<std::endl;
 		}
 
-		void get_mass(double & mass, unsigned int & SIMP){
-			double rho_local = rho;
-			if (design == 1)
-				rho_local = PetscPowRealInt(density_design,SIMP)*rho;
-
-			mass = rho_local * 4.0/3.0*PETSC_PI*PetscPowRealInt(R,3);
+		void get_mass(double & mass){
+			mass = rho * 4.0/3.0*PETSC_PI*PetscPowRealInt(R,3);
 		}
 
-		void get_mass_derivative(double & mass_derivative, unsigned int & SIMP){
-			double rho_local = rho;
-			if (design == 1)
-				rho_local = SIMP*PetscPowRealInt(density_design,SIMP-1)*rho;
-			else
-				rho_local = 0.0;
+		void get_mass_derivative(double & mass_derivative){
 
-			mass_derivative = rho_local * 4.0/3.0*PETSC_PI*PetscPowRealInt(R,3);
+			mass_derivative = rho * 4.0/3.0*PETSC_PI*PetscPowRealInt(R,3);
 		}
 
 };

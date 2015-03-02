@@ -39,8 +39,6 @@ class DesignParameters
 
 		double InitialGuess;
 
-		PetscScalar alphaMaxInitial;
-
 		PetscInt objfunctionType;
 
 		PetscReal initial_design;

@@ -13,6 +13,8 @@
 #include "designparameters.h"
 #include "petscsys.h"
 #include "armadillo"
+
+#include <cassert>
 class ConstitutiveLaw
 {
 	public:
@@ -58,6 +60,19 @@ class ConstitutiveLaw
 			}
 		}
 
+
+		void set_alphaP_initial(PetscScalar & alphaMax_Initial){
+			/* We need to have calculated alphaY*/
+			assert(_is_matprop_calculated);
+
+			(*this.*_partial_derivative_P_alphaP_Initial)(alphaMax_Initial);
+
+			_is_alphaP_initial_calculated = true;
+
+		}
+
+
+
 		/* ---------------------------------------------------
 		 *
 		 *
@@ -70,6 +85,22 @@ class ConstitutiveLaw
 		PetscReal & get_alphaMax(){ return _alphaMax;}
 
 		PetscReal & get_delta(){ return _delta;}
+
+		PetscScalar & get_alphaP_initial(){
+
+			/* We need to have calculated _alphaP_Initial*/
+			assert(_is_alphaP_initial_calculated);
+
+			return _alphaP_Initial;
+
+		}
+
+		PetscScalar & get_derivative_force_coefficient() {
+
+			assert(_is_force_coefficients_calculated);
+
+			return _Derivative_Force;
+		}
 
 
 
@@ -109,14 +140,14 @@ class ConstitutiveLaw
 
 		PetscReal * partial_derivative_U_force_vector();
 
-		PetscReal * partial_derivative_P();
+		PetscReal & partial_derivative_P();
 
 		PetscReal & partial_derivative_alphaMax_force_vector();
 
 		arma::colvec & residual_derivative_alphaMax();
 
 
-		PetscReal * internal_force_partial_derivative_P_bead(unsigned int & bead);
+		PetscReal * internal_force_partial_derivative_P_bead();
 
 
 
@@ -160,9 +191,9 @@ class ConstitutiveLaw
 		// Assigned when resetting the beads
 		void (ConstitutiveLaw::*_force_coefficients) ();
 
-		void (ConstitutiveLaw::*_partial_derivative_P_function) ();
-
 		void (ConstitutiveLaw::*_partial_derivative_alphaMax) ();
+
+		void (ConstitutiveLaw::*_partial_derivative_P_alphaP_Initial) (PetscScalar & alphaMax_Initial);
 
 
 		/* ---------------------------------------------------
@@ -216,11 +247,10 @@ class ConstitutiveLaw
 		 * ----------------------------------------------------
 		 */
 
-		void partial_derivative_P_plastic();
 
-		void partial_derivative_P_linear();
+		void _partial_derivative_P_alphaP_Initial_plastic(PetscScalar & alphaMax_Initial);
 
-		void partial_derivative_P_dummy_plastic();
+		void _partial_derivative_P_alphaP_Initial_dummy_plastic(PetscScalar & alphaMax_Initial);
 
 
 		/* ---------------------------------------------------
@@ -277,9 +307,9 @@ class ConstitutiveLaw
 		BeadsData * _bead_to, * _bead_from;
 
 
-		PetscReal * _force_vector, * _unit_vector, *_partial_derivative_U_force_vector, * _partial_derivative_P , * _internal_partial_derivative_P_bead;
+		PetscReal * _force_vector, * _unit_vector, *_partial_derivative_U_force_vector , * _internal_partial_derivative_P_bead;
 
-		PetscReal _partial_derivative_alphaMax_coefficient;
+		PetscReal _partial_derivative_alphaMax_coefficient, _partial_derivative_P;
 
 		PetscReal _distance, _RStar, _EStar, _Force,_Derivative_Force;
 
@@ -293,12 +323,15 @@ class ConstitutiveLaw
 
 		bool _is_force_coefficients_calculated;
 
+		bool _is_alphaP_initial_calculated;
+
 		// Parameters for the plastic evaluation
 		bool _plastic;
 		PetscReal _alphaY, _AreaY;
 
 		// Plastic state variable. It needs to be set before evaluation
-		PetscReal _alphaMax, _alphaP;
+		// _derivative_alphaP_Initial is derivative w.r.t. initial alphaMax
+		PetscReal _alphaMax, _alphaP, _alphaP_Initial, _derivative_alphaP_Initial;
 		bool _is_alphaMax;
 
 		// Constants for the plastic evaluation

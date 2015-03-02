@@ -2,10 +2,8 @@
 PETSC_DIR := /home/miguel/petsc
 PETSC_ARCH := linux-mpich
 
-program_C_SRCS = $(wildcard *.C) quadbeads.C
-program_C_OBJS = ${program_C_SRCS:.c=.o}
 
-program_CXX_SRCS = mainbeads.C constitutivelaw.C system.C quadbeads.C vechistory.C
+program_CXX_SRCS = mainbeads.C constitutivelaw.C system.C vechistory.C
 program_CXX_OBJS = ${program_CXX_SRCS:.C=.o}
 
 LDFLAGS = -larmadillo
@@ -114,8 +112,6 @@ mainbeads.o: /usr/include/wchar.h
 mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
-mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
-mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 mainbeads.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -124,16 +120,20 @@ mainbeads.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-mainbeads.o: /usr/include/c++/4.8/complex.h
+mainbeads.o: /usr/include/c++/4.8/complex.h /usr/include/complex.h
+mainbeads.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 mainbeads.o: /home/miguel/petsc/include/petscerror.h
 mainbeads.o: /home/miguel/petsc/include/petscviewertypes.h
 mainbeads.o: /home/miguel/petsc/include/petscoptions.h
 mainbeads.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-mainbeads.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
-mainbeads.o: /usr/include/time.h /usr/include/endian.h
+mainbeads.o: /usr/include/xlocale.h /usr/include/stdlib.h
+mainbeads.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
+mainbeads.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
+mainbeads.o: /usr/include/endian.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/endian.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
+mainbeads.o: /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/sys/select.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/select.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
@@ -142,18 +142,18 @@ mainbeads.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 mainbeads.o: /usr/include/alloca.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
-mainbeads.o: /usr/include/limits.h
+mainbeads.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/limits.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 mainbeads.o: /usr/include/linux/limits.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/signal.h
+mainbeads.o: /usr/include/signal.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/signum.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
+mainbeads.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/param.h
 mainbeads.o: /usr/include/linux/param.h
@@ -191,7 +191,7 @@ mainbeads.o: /usr/include/c++/4.8/streambuf
 mainbeads.o: /usr/include/c++/4.8/bits/streambuf.tcc
 mainbeads.o: /usr/include/c++/4.8/bits/basic_ios.h
 mainbeads.o: /usr/include/c++/4.8/bits/locale_facets.h
-mainbeads.o: /usr/include/c++/4.8/cwctype
+mainbeads.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 mainbeads.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -640,12 +640,12 @@ mainbeads.o: /usr/include/armadillo_bits/spglue_plus_meat.hpp
 mainbeads.o: /usr/include/armadillo_bits/spglue_minus_meat.hpp
 mainbeads.o: /usr/include/armadillo_bits/spglue_times_meat.hpp
 mainbeads.o: /usr/include/armadillo_bits/compiler_setup_post.hpp
+mainbeads.o: /usr/include/c++/4.8/cassert /usr/include/assert.h
 mainbeads.o: /home/miguel/petsc/include/petscdmnetwork.h
 mainbeads.o: /home/miguel/petsc/include/petscdm.h
 mainbeads.o: /home/miguel/petsc/include/petscfetypes.h
 mainbeads.o: /home/miguel/petsc/include/petscdstypes.h
 mainbeads.o: /usr/include/c++/4.8/iomanip vechistory.h
-mainbeads.o: /usr/include/c++/4.8/cassert /usr/include/assert.h
 mainbeads.o: /usr/include/c++/4.8/iterator
 mainbeads.o: /usr/include/c++/4.8/bits/stream_iterator.h vechistoryRK.h
 mainbeads.o: quadbeads.h
@@ -738,7 +738,8 @@ constitutivelaw.o: /usr/include/c++/4.8/bits/localefwd.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++locale.h
 constitutivelaw.o: /usr/include/c++/4.8/clocale /usr/include/locale.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/locale.h
-constitutivelaw.o: /usr/include/c++/4.8/cctype /usr/include/ctype.h
+constitutivelaw.o: /usr/include/xlocale.h /usr/include/c++/4.8/cctype
+constitutivelaw.o: /usr/include/ctype.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/types.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/typesizes.h
 constitutivelaw.o: /usr/include/endian.h
@@ -768,7 +769,7 @@ constitutivelaw.o: /usr/include/c++/4.8/streambuf
 constitutivelaw.o: /usr/include/c++/4.8/bits/streambuf.tcc
 constitutivelaw.o: /usr/include/c++/4.8/bits/basic_ios.h
 constitutivelaw.o: /usr/include/c++/4.8/bits/locale_facets.h
-constitutivelaw.o: /usr/include/c++/4.8/cwctype
+constitutivelaw.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 constitutivelaw.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -795,8 +796,6 @@ constitutivelaw.o: /usr/include/_G_config.h
 constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
-constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
-constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 constitutivelaw.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -805,12 +804,15 @@ constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-constitutivelaw.o: /usr/include/c++/4.8/complex.h
+constitutivelaw.o: /usr/include/c++/4.8/complex.h /usr/include/complex.h
+constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 constitutivelaw.o: /home/miguel/petsc/include/petscerror.h
 constitutivelaw.o: /home/miguel/petsc/include/petscviewertypes.h
 constitutivelaw.o: /home/miguel/petsc/include/petscoptions.h
 constitutivelaw.o: /home/miguel/petsc/include/petsclog.h
 constitutivelaw.o: /usr/include/string.h /usr/include/stdlib.h
+constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
+constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/types.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/select.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/select.h
@@ -819,19 +821,19 @@ constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/time.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 constitutivelaw.o: /usr/include/alloca.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
+constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/param.h
 constitutivelaw.o: /usr/include/limits.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 constitutivelaw.o: /usr/include/linux/limits.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/param.h
 constitutivelaw.o: /usr/include/signal.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/signum.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
+constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/param.h
 constitutivelaw.o: /usr/include/linux/param.h
@@ -1273,8 +1275,8 @@ constitutivelaw.o: /usr/include/armadillo_bits/spglue_plus_meat.hpp
 constitutivelaw.o: /usr/include/armadillo_bits/spglue_minus_meat.hpp
 constitutivelaw.o: /usr/include/armadillo_bits/spglue_times_meat.hpp
 constitutivelaw.o: /usr/include/armadillo_bits/compiler_setup_post.hpp
-constitutivelaw.o: /usr/include/c++/4.8/iomanip /usr/include/c++/4.8/cassert
-constitutivelaw.o: /usr/include/assert.h
+constitutivelaw.o: /usr/include/c++/4.8/cassert /usr/include/assert.h
+constitutivelaw.o: /usr/include/c++/4.8/iomanip
 system.o: system.h problemparameters.h /usr/include/c++/4.8/vector
 system.o: /usr/include/c++/4.8/bits/stl_algobase.h
 system.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
@@ -1323,8 +1325,6 @@ system.o: /usr/include/_G_config.h /usr/include/wchar.h
 system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 system.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
-system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
-system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 system.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 system.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 system.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -1333,16 +1333,19 @@ system.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 system.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 system.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 system.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-system.o: /usr/include/c++/4.8/complex.h
+system.o: /usr/include/c++/4.8/complex.h /usr/include/complex.h
+system.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 system.o: /home/miguel/petsc/include/petscerror.h
 system.o: /home/miguel/petsc/include/petscviewertypes.h
 system.o: /home/miguel/petsc/include/petscoptions.h
 system.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-system.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
-system.o: /usr/include/time.h /usr/include/endian.h
-system.o: /usr/include/x86_64-linux-gnu/bits/endian.h
+system.o: /usr/include/xlocale.h /usr/include/stdlib.h
+system.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
+system.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
+system.o: /usr/include/endian.h /usr/include/x86_64-linux-gnu/bits/endian.h
 system.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
 system.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
+system.o: /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h
 system.o: /usr/include/x86_64-linux-gnu/sys/select.h
 system.o: /usr/include/x86_64-linux-gnu/bits/select.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
@@ -1351,18 +1354,17 @@ system.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 system.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 system.o: /usr/include/alloca.h
 system.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
-system.o: /usr/include/limits.h
+system.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/limits.h
 system.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 system.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 system.o: /usr/include/linux/limits.h
 system.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-system.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/signal.h
-system.o: /usr/include/x86_64-linux-gnu/bits/signum.h
+system.o: /usr/include/signal.h /usr/include/x86_64-linux-gnu/bits/signum.h
 system.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
+system.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
 system.o: /usr/include/x86_64-linux-gnu/bits/param.h
 system.o: /usr/include/linux/param.h
@@ -1400,7 +1402,7 @@ system.o: /usr/include/c++/4.8/streambuf
 system.o: /usr/include/c++/4.8/bits/streambuf.tcc
 system.o: /usr/include/c++/4.8/bits/basic_ios.h
 system.o: /usr/include/c++/4.8/bits/locale_facets.h
-system.o: /usr/include/c++/4.8/cwctype
+system.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
 system.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 system.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 system.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -1846,644 +1848,16 @@ system.o: /usr/include/armadillo_bits/spglue_plus_meat.hpp
 system.o: /usr/include/armadillo_bits/spglue_minus_meat.hpp
 system.o: /usr/include/armadillo_bits/spglue_times_meat.hpp
 system.o: /usr/include/armadillo_bits/compiler_setup_post.hpp
+system.o: /usr/include/c++/4.8/cassert /usr/include/assert.h
 system.o: /home/miguel/petsc/include/petscdmnetwork.h
 system.o: /home/miguel/petsc/include/petscdm.h
 system.o: /home/miguel/petsc/include/petscfetypes.h
 system.o: /home/miguel/petsc/include/petscdstypes.h
 system.o: /usr/include/c++/4.8/iomanip vechistory.h
-system.o: /usr/include/c++/4.8/cassert /usr/include/assert.h
 system.o: /usr/include/c++/4.8/iterator
 system.o: /usr/include/c++/4.8/bits/stream_iterator.h vechistoryRK.h
 system.o: /usr/include/dirent.h /usr/include/x86_64-linux-gnu/bits/dirent.h
 system.o: /home/miguel/petsc/include/petsctime.h
-quadbeads.o: quadbeads.h
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpTNLP.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpUtils.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpTypes.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpoptConfig.h
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpDebug.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpReferenced.hpp
-quadbeads.o: /usr/include/c++/4.8/list
-quadbeads.o: /usr/include/c++/4.8/bits/stl_algobase.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/os_defines.h
-quadbeads.o: /usr/include/features.h /usr/include/stdc-predef.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/sys/cdefs.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/wordsize.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/gnu/stubs.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/cpu_defines.h
-quadbeads.o: /usr/include/c++/4.8/bits/functexcept.h
-quadbeads.o: /usr/include/c++/4.8/bits/exception_defines.h
-quadbeads.o: /usr/include/c++/4.8/bits/cpp_type_traits.h
-quadbeads.o: /usr/include/c++/4.8/ext/type_traits.h
-quadbeads.o: /usr/include/c++/4.8/ext/numeric_traits.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_pair.h
-quadbeads.o: /usr/include/c++/4.8/bits/move.h
-quadbeads.o: /usr/include/c++/4.8/bits/concept_check.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_iterator_base_types.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_iterator_base_funcs.h
-quadbeads.o: /usr/include/c++/4.8/debug/debug.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_iterator.h
-quadbeads.o: /usr/include/c++/4.8/bits/allocator.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++allocator.h
-quadbeads.o: /usr/include/c++/4.8/ext/new_allocator.h
-quadbeads.o: /usr/include/c++/4.8/new /usr/include/c++/4.8/exception
-quadbeads.o: /usr/include/c++/4.8/bits/atomic_lockfree_defines.h
-quadbeads.o: /usr/include/c++/4.8/bits/memoryfwd.h
-quadbeads.o: /usr/include/c++/4.8/bits/range_access.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_list.h
-quadbeads.o: /usr/include/c++/4.8/bits/list.tcc
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpException.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpJournalist.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpSmartPtr.hpp
-quadbeads.o: /usr/include/c++/4.8/cstdarg
-quadbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
-quadbeads.o: /usr/include/c++/4.8/cstdio /usr/include/stdio.h
-quadbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stddef.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/types.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/typesizes.h
-quadbeads.o: /usr/include/libio.h /usr/include/_G_config.h
-quadbeads.o: /usr/include/wchar.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
-quadbeads.o: /usr/include/c++/4.8/string
-quadbeads.o: /usr/include/c++/4.8/bits/stringfwd.h
-quadbeads.o: /usr/include/c++/4.8/bits/char_traits.h
-quadbeads.o: /usr/include/c++/4.8/bits/postypes.h /usr/include/c++/4.8/cwchar
-quadbeads.o: /usr/include/c++/4.8/bits/localefwd.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++locale.h
-quadbeads.o: /usr/include/c++/4.8/clocale /usr/include/locale.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/locale.h
-quadbeads.o: /usr/include/c++/4.8/iosfwd /usr/include/c++/4.8/cctype
-quadbeads.o: /usr/include/ctype.h /usr/include/endian.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/endian.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
-quadbeads.o: /usr/include/c++/4.8/bits/ostream_insert.h
-quadbeads.o: /usr/include/c++/4.8/bits/cxxabi_forced.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_function.h
-quadbeads.o: /usr/include/c++/4.8/backward/binders.h
-quadbeads.o: /usr/include/c++/4.8/bits/basic_string.h
-quadbeads.o: /usr/include/c++/4.8/ext/atomicity.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/gthr.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/gthr-default.h
-quadbeads.o: /usr/include/pthread.h /usr/include/sched.h /usr/include/time.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sched.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/setjmp.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/atomic_word.h
-quadbeads.o: /usr/include/c++/4.8/bits/basic_string.tcc
-quadbeads.o: /usr/include/c++/4.8/vector
-quadbeads.o: /usr/include/c++/4.8/bits/stl_construct.h
-quadbeads.o: /usr/include/c++/4.8/ext/alloc_traits.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_uninitialized.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_vector.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_bvector.h
-quadbeads.o: /usr/include/c++/4.8/bits/vector.tcc
-quadbeads.o: /usr/include/c++/4.8/ostream /usr/include/c++/4.8/ios
-quadbeads.o: /usr/include/c++/4.8/bits/ios_base.h
-quadbeads.o: /usr/include/c++/4.8/bits/locale_classes.h
-quadbeads.o: /usr/include/c++/4.8/bits/locale_classes.tcc
-quadbeads.o: /usr/include/c++/4.8/streambuf
-quadbeads.o: /usr/include/c++/4.8/bits/streambuf.tcc
-quadbeads.o: /usr/include/c++/4.8/bits/basic_ios.h
-quadbeads.o: /usr/include/c++/4.8/bits/locale_facets.h
-quadbeads.o: /usr/include/c++/4.8/cwctype
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
-quadbeads.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
-quadbeads.o: /usr/include/c++/4.8/bits/locale_facets.tcc
-quadbeads.o: /usr/include/c++/4.8/bits/basic_ios.tcc
-quadbeads.o: /usr/include/c++/4.8/bits/ostream.tcc
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpAlgTypes.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpReturnCodes.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpReturnCodes_inc.h
-quadbeads.o: /usr/include/c++/4.8/map /usr/include/c++/4.8/bits/stl_tree.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_map.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_multimap.h
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIteratesVector.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpCompoundVector.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpVector.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpTaggedObject.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpObserver.hpp
-quadbeads.o: /usr/include/c++/4.8/algorithm /usr/include/c++/4.8/utility
-quadbeads.o: /usr/include/c++/4.8/bits/stl_relops.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_algo.h
-quadbeads.o: /usr/include/c++/4.8/cstdlib /usr/include/stdlib.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/sys/types.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/sys/select.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/select.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/time.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
-quadbeads.o: /usr/include/alloca.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-quadbeads.o: /usr/include/c++/4.8/bits/algorithmfwd.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_heap.h
-quadbeads.o: /usr/include/c++/4.8/bits/stl_tempbuf.h
-quadbeads.o: /usr/include/c++/4.8/limits
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpCachedResults.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIpoptData.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpSymMatrix.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpMatrix.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpOptionsList.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpRegOptions.hpp
-quadbeads.o: /usr/include/c++/4.8/iostream /usr/include/c++/4.8/istream
-quadbeads.o: /usr/include/c++/4.8/bits/istream.tcc
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpTimingStatistics.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpTimedTask.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIpoptCalculatedQuantities.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpTNLPAdapter.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpNLP.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpOrigIpoptNLP.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIpoptNLP.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpNLPScaling.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpRestoIpoptNLP.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpCompoundMatrix.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpCompoundSymMatrix.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpIdentityMatrix.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpDiagMatrix.hpp
-quadbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpZeroMatrix.hpp
-quadbeads.o: /usr/include/assert.h system.h problemparameters.h
-quadbeads.o: /home/miguel/petsc/include/petscsys.h
-quadbeads.o: /home/miguel/petsc/linux-mpich-opt/include/petscconf.h
-quadbeads.o: /home/miguel/petsc/linux-mpich-opt/include/petscfix.h
-quadbeads.o: /home/miguel/petsc/include/petscversion.h
-quadbeads.o: /home/miguel/petsc/linux-mpich-opt/include/mpi.h
-quadbeads.o: /home/miguel/petsc/linux-mpich-opt/include/mpio.h
-quadbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
-quadbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
-quadbeads.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_vall.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/inf.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/nan.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-quadbeads.o: /usr/include/c++/4.8/complex.h
-quadbeads.o: /home/miguel/petsc/include/petscerror.h
-quadbeads.o: /home/miguel/petsc/include/petscviewertypes.h
-quadbeads.o: /home/miguel/petsc/include/petscoptions.h
-quadbeads.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-quadbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
-quadbeads.o: /usr/include/limits.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
-quadbeads.o: /usr/include/linux/limits.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/signal.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/signum.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/param.h
-quadbeads.o: /usr/include/linux/param.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/asm/param.h
-quadbeads.o: /usr/include/asm-generic/param.h designparameters.h beadsdata.h
-quadbeads.o: /home/miguel/petsc/include/petscts.h
-quadbeads.o: /home/miguel/petsc/include/petscsnes.h
-quadbeads.o: /home/miguel/petsc/include/petscksp.h
-quadbeads.o: /home/miguel/petsc/include/petscpc.h
-quadbeads.o: /home/miguel/petsc/include/petscmat.h
-quadbeads.o: /home/miguel/petsc/include/petscvec.h
-quadbeads.o: /home/miguel/petsc/include/petscis.h
-quadbeads.o: /home/miguel/petsc/include/petscsftypes.h
-quadbeads.o: /home/miguel/petsc/include/petscistypes.h
-quadbeads.o: /home/miguel/petsc/include/petscviewer.h
-quadbeads.o: /home/miguel/petsc/include/petscdrawtypes.h
-quadbeads.o: /home/miguel/petsc/include/petscdmtypes.h
-quadbeads.o: /home/miguel/petsc/include/petscfvtypes.h
-quadbeads.o: /home/miguel/petsc/include/petscdmdatypes.h constitutivelaw.h
-quadbeads.o: /usr/include/armadillo /usr/include/c++/4.8/cstring
-quadbeads.o: /usr/include/c++/4.8/climits /usr/include/c++/4.8/cmath
-quadbeads.o: /usr/include/c++/4.8/ctime /usr/include/c++/4.8/fstream
-quadbeads.o: /usr/include/c++/4.8/bits/codecvt.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/basic_file.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++io.h
-quadbeads.o: /usr/include/c++/4.8/bits/fstream.tcc
-quadbeads.o: /usr/include/c++/4.8/sstream
-quadbeads.o: /usr/include/c++/4.8/bits/sstream.tcc
-quadbeads.o: /usr/include/c++/4.8/stdexcept /usr/include/c++/4.8/complex
-quadbeads.o: /usr/include/unistd.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/posix_opt.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/environments.h
-quadbeads.o: /usr/include/x86_64-linux-gnu/bits/confname.h
-quadbeads.o: /usr/include/getopt.h /usr/include/x86_64-linux-gnu/sys/time.h
-quadbeads.o: /usr/include/armadillo_bits/config.hpp
-quadbeads.o: /usr/include/armadillo_bits/compiler_setup.hpp
-quadbeads.o: /usr/include/armadillo_bits/include_atlas.hpp
-quadbeads.o: /usr/include/armadillo_bits/include_hdf5.hpp
-quadbeads.o: /usr/include/armadillo_bits/forward_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_static_check.hpp
-quadbeads.o: /usr/include/armadillo_bits/typedef_elem.hpp
-quadbeads.o: /usr/include/armadillo_bits/typedef_elem_check.hpp
-quadbeads.o: /usr/include/armadillo_bits/typedef_mat.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_boost.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_version.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_config.hpp
-quadbeads.o: /usr/include/armadillo_bits/traits.hpp
-quadbeads.o: /usr/include/armadillo_bits/promote_type.hpp
-quadbeads.o: /usr/include/armadillo_bits/upgrade_val.hpp
-quadbeads.o: /usr/include/armadillo_bits/restrictors.hpp
-quadbeads.o: /usr/include/armadillo_bits/access.hpp
-quadbeads.o: /usr/include/armadillo_bits/span.hpp
-quadbeads.o: /usr/include/armadillo_bits/distr_param.hpp
-quadbeads.o: /usr/include/armadillo_bits/constants.hpp
-quadbeads.o: /usr/include/armadillo_bits/constants_compat.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_rng_cxx98.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_rng.hpp
-quadbeads.o: /usr/include/armadillo_bits/Base_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/BaseCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpBase_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/blas_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/lapack_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/atlas_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/arpack_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/hdf5_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/blas_wrapper.hpp
-quadbeads.o: /usr/include/armadillo_bits/lapack_wrapper.hpp
-quadbeads.o: /usr/include/armadillo_bits/atlas_wrapper.hpp
-quadbeads.o: /usr/include/armadillo_bits/arpack_wrapper.hpp
-quadbeads.o: /usr/include/armadillo_bits/cond_rel_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/arrayops_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/podarray_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/auxlib_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/sp_auxlib_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/injector_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Mat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Col_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Row_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Cube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/xvec_htrans_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/xtrans_mat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SizeMat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SizeCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpValProxy_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpMat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpCol_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpRow_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpSubview_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/typedef_mat_fixed.hpp
-quadbeads.o: /usr/include/armadillo_bits/field_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_elem1_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_elem2_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_field_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_cube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/diagview_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_each_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/diskio_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/wall_clock_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/running_stat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/running_stat_vec_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Op_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/OpCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpOp_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/eOp_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/eOpCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtOp_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtOpCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtSpOp_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Glue_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/eGlue_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtGlue_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpGlue_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/GlueCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/eGlueCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtGlueCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/eop_core_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/eglue_core_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/Gen_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/GenCube_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_diagmat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_diagvec_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_dot_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_inv_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_htrans_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_max_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_min_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_mean_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_median_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_sort_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_sum_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_stddev_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_strans_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_var_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_repmat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_reshape_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_vectorise_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_resize_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cov_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cor_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_shuffle_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_prod_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_pinv_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_dotext_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_flip_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_princomp_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_misc_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_relational_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_find_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_chol_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cx_scalar_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_trimat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cumsum_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_symmat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_hist_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_unique_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_toeplitz_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_fft_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_any_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_all_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_normalise_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_clamp_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_expmat_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_times_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_mixed_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_cov_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_cor_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_kron_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_cross_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_join_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_relational_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_solve_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_conv_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_toeplitz_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_hist_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_histc_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_max_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_min_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_max_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_min_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_sum_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_strans_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_htrans_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_misc_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_mean_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_var_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spglue_plus_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spglue_minus_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/spglue_times_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/debug.hpp
-quadbeads.o: /usr/include/armadillo_bits/memory.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_cmath.hpp
-quadbeads.o: /usr/include/armadillo_bits/unwrap.hpp
-quadbeads.o: /usr/include/armadillo_bits/unwrap_cube.hpp
-quadbeads.o: /usr/include/armadillo_bits/unwrap_spmat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Proxy.hpp
-quadbeads.o: /usr/include/armadillo_bits/ProxyCube.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpProxy.hpp
-quadbeads.o: /usr/include/armadillo_bits/diagmat_proxy.hpp
-quadbeads.o: /usr/include/armadillo_bits/strip.hpp
-quadbeads.o: /usr/include/armadillo_bits/Op_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/OpCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpOp_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtOp_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtOpCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtSpOp_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Glue_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/GlueCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpGlue_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/eop_aux.hpp
-quadbeads.o: /usr/include/armadillo_bits/eOp_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/eOpCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/eGlue_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/eGlueCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtGlue_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/mtGlueCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Base_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/BaseCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpBase_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Gen_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/GenCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_ostream_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/arma_ostream_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_n_unique.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_plus.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_minus.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_times.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_schur.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_div.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_relational.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_cube_plus.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_cube_minus.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_cube_times.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_cube_schur.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_cube_div.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_cube_relational.hpp
-quadbeads.o: /usr/include/armadillo_bits/operator_ostream.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_conv_to.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_min.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_max.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_accu.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_sum.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_diagmat.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_diagvec.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_inv.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_trace.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_trans.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_det.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_log_det.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eig_sym.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eig_gen.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eig_pair.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_lu.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_zeros.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_ones.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eye.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_misc.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_find.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_elem.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_norm.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_dot.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_randu.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_randn.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_trig.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_mean.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_median.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_stddev.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_var.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_sort.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_sort_index.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_strans.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_chol.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_qr.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_svd.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_solve.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_repmat.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_reshape.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_vectorise.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_resize.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_cov.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_cor.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_shuffle.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_prod.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eps.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_pinv.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_rank.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_kron.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_flip.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_as_scalar.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_princomp.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_cross.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_join.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_conv.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_trunc_exp.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_trunc_log.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_toeplitz.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_trimat.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_cumsum.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_symmat.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_syl_lyap.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_hist.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_histc.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_unique.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_fft.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_fft2.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_any.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_all.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_size.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_numel.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_inplace_strans.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_inplace_trans.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_randi.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_cond.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_normalise.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_clamp.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_expmat.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_speye.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_spones.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_sprandn.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_sprandu.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eigs_sym.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_eigs_gen.hpp
-quadbeads.o: /usr/include/armadillo_bits/fn_norm_sparse.hpp
-quadbeads.o: /usr/include/armadillo_bits/hdf5_misc.hpp
-quadbeads.o: /usr/include/armadillo_bits/fft_engine.hpp
-quadbeads.o: /usr/include/armadillo_bits/gmm_misc_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/gmm_misc_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/gmm_diag_bones.hpp
-quadbeads.o: /usr/include/armadillo_bits/gmm_diag_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/mul_gemv.hpp
-quadbeads.o: /usr/include/armadillo_bits/mul_gemm.hpp
-quadbeads.o: /usr/include/armadillo_bits/mul_gemm_mixed.hpp
-quadbeads.o: /usr/include/armadillo_bits/mul_syrk.hpp
-quadbeads.o: /usr/include/armadillo_bits/mul_herk.hpp
-quadbeads.o: /usr/include/armadillo_bits/eop_core_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/eglue_core_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/cond_rel_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/arrayops_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/podarray_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/auxlib_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/sp_auxlib_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/injector_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Mat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Col_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Row_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/Cube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/xvec_htrans_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/xtrans_mat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SizeMat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SizeCube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/field_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_elem1_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_elem2_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_field_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_cube_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/diagview_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/subview_each_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpValProxy_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpMat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpMat_iterators_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpCol_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpRow_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpSubview_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/SpSubview_iterators_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/diskio_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/wall_clock_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/running_stat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/running_stat_vec_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_diagmat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_diagvec_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_dot_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_inv_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_htrans_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_max_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_min_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_mean_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_median_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_sort_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_sum_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_stddev_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_strans_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_var_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_repmat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_reshape_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_vectorise_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_resize_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cov_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cor_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_shuffle_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_prod_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_pinv_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_dotext_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_flip_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_princomp_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_misc_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_relational_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_find_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_chol_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cx_scalar_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_trimat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_cumsum_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_symmat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_hist_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_unique_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_toeplitz_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_fft_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_any_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_all_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_normalise_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_clamp_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/op_expmat_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_times_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_mixed_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_cov_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_cor_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_kron_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_cross_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_join_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_relational_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_solve_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_conv_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_toeplitz_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_hist_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_histc_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_max_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/glue_min_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_max_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_min_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_sum_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_strans_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_htrans_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_misc_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_mean_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spop_var_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spglue_plus_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spglue_minus_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/spglue_times_meat.hpp
-quadbeads.o: /usr/include/armadillo_bits/compiler_setup_post.hpp
-quadbeads.o: /home/miguel/petsc/include/petscdmnetwork.h
-quadbeads.o: /home/miguel/petsc/include/petscdm.h
-quadbeads.o: /home/miguel/petsc/include/petscfetypes.h
-quadbeads.o: /home/miguel/petsc/include/petscdstypes.h
-quadbeads.o: /usr/include/c++/4.8/iomanip vechistory.h
-quadbeads.o: /usr/include/c++/4.8/cassert /usr/include/c++/4.8/iterator
-quadbeads.o: /usr/include/c++/4.8/bits/stream_iterator.h vechistoryRK.h
 vechistory.o: vechistory.h /home/miguel/petsc/include/petscvec.h
 vechistory.o: /home/miguel/petsc/include/petscis.h
 vechistory.o: /home/miguel/petsc/include/petscsys.h
@@ -2505,8 +1879,6 @@ vechistory.o: /usr/include/wchar.h
 vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
-vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
-vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 vechistory.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -2519,15 +1891,20 @@ vechistory.o: /usr/include/c++/4.8/complex.h
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/os_defines.h
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/cpu_defines.h
+vechistory.o: /usr/include/complex.h
+vechistory.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 vechistory.o: /home/miguel/petsc/include/petscerror.h
 vechistory.o: /home/miguel/petsc/include/petscviewertypes.h
 vechistory.o: /home/miguel/petsc/include/petscoptions.h
 vechistory.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-vechistory.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
-vechistory.o: /usr/include/time.h /usr/include/endian.h
+vechistory.o: /usr/include/xlocale.h /usr/include/stdlib.h
+vechistory.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
+vechistory.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
+vechistory.o: /usr/include/endian.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/endian.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
+vechistory.o: /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h
 vechistory.o: /usr/include/x86_64-linux-gnu/sys/select.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/select.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
@@ -2536,18 +1913,18 @@ vechistory.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 vechistory.o: /usr/include/alloca.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
-vechistory.o: /usr/include/limits.h
+vechistory.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/limits.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 vechistory.o: /usr/include/linux/limits.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-vechistory.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/signal.h
+vechistory.o: /usr/include/signal.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/signum.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
+vechistory.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/param.h
 vechistory.o: /usr/include/linux/param.h
@@ -2610,7 +1987,7 @@ vechistory.o: /usr/include/c++/4.8/streambuf
 vechistory.o: /usr/include/c++/4.8/bits/streambuf.tcc
 vechistory.o: /usr/include/c++/4.8/bits/basic_ios.h
 vechistory.o: /usr/include/c++/4.8/bits/locale_facets.h
-vechistory.o: /usr/include/c++/4.8/cwctype
+vechistory.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 vechistory.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -2620,3 +1997,10 @@ vechistory.o: /usr/include/c++/4.8/bits/ostream.tcc
 vechistory.o: /usr/include/c++/4.8/istream
 vechistory.o: /usr/include/c++/4.8/bits/istream.tcc
 vechistory.o: /usr/include/c++/4.8/bits/stream_iterator.h
+vechistory.o: /usr/include/c++/4.8/vector
+vechistory.o: /usr/include/c++/4.8/bits/stl_construct.h
+vechistory.o: /usr/include/c++/4.8/ext/alloc_traits.h
+vechistory.o: /usr/include/c++/4.8/bits/stl_uninitialized.h
+vechistory.o: /usr/include/c++/4.8/bits/stl_vector.h
+vechistory.o: /usr/include/c++/4.8/bits/stl_bvector.h
+vechistory.o: /usr/include/c++/4.8/bits/vector.tcc

@@ -2,7 +2,7 @@ clear all
 clc
 
 
-N_beads = 4;
+N_beads = 3;
 
 dynamic = 1;
 
@@ -121,8 +121,8 @@ end
 fprintf(finN,'%d\n',NumberofNodes);
 fprintf(finC,'%d\n',NumberOfConstraints);
 for i=1:NumberofNodes
-    fprintf(finN,'%d\t %6.9f\t %6.9f\t %6.9f\t %d\t %d\t %10.3e\t %10.3e\t  %6.2f\t %6.9f\n ', ...
-            i, X(i),Y(i),1.0,type(i),design(i),Evec(i),rhovec(i),nuvec(i),Rvec(i));
+    fprintf(finN,'%d\t %6.9f\t %6.9f\t %6.9f\t %d\t %10.3e\t %10.3e\t  %6.2f\t %6.9f\n ', ...
+            i, X(i),Y(i),1.0,type(i),Evec(i),rhovec(i),nuvec(i),Rvec(i));
     if (constrained(i) ~= 0)
         if (constrained(i) == 3)
             fprintf(finC,'%d\t %d\t %f\n ', i,1,0.0);
@@ -134,7 +134,7 @@ for i=1:NumberofNodes
 end
 fprintf(finE,'%d\n',NumberofElements);
 for i=1:NumberofElements
-    fprintf(finE,'%d\t %d\t %d\t %f\n ', i, Connectivity(i,1),Connectivity(i,2),alpha);
+    fprintf(finE,'%d\t %d\t %d\t %f\n ', i, Connectivity(i,1),Connectivity(i,2),i);
 end
 
 fprintf(finA,'%d\n',1);

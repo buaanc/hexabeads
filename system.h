@@ -54,6 +54,12 @@
 	 *
 	 */
 
+struct _p_EDGEDATA{
+  PetscInt      VariableGroup;
+};
+
+typedef struct _p_EDGEDATA *EDGEDATA;
+
 class System
 {
 	public:
@@ -103,9 +109,9 @@ class System
 	 * Calculating the RHS parameter derivative for each design variable
 	 * - DF is a vector corresponding to the design variable we're in
 	 */
-	PetscErrorCode RHSParameterDerivatives(PetscReal & t, Vec & U, Vec & DF,  PetscInt & DesignBeadNumber, Vec & alphaMax);
+	PetscErrorCode RHSParameterDerivatives(PetscReal & t, Vec & U, Vec & DF,  std::vector<PetscInt> & DesignElements, Vec & alphaMax);
 
-	PetscErrorCode RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & DF, PetscInt & DesignBeadNumber, Vec & alphaMax);
+	PetscErrorCode RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & DF, PetscInt Design_Index, Vec & alphaMax);
 
 	/*
 	 * Destructor
@@ -124,14 +130,12 @@ class System
 	 */
 	PetscErrorCode InitialSolution(DM networkdm,Vec X);
 
+	PetscErrorCode InitialDesignSolution();
+
 
 	/*
 	 * Objective function calculation
 	 */
-	PetscErrorCode ObjFunction();
-	PetscErrorCode (System::*CalculateObjFunction) ();
-	PetscErrorCode CalculateObjFunction_P_Norm();
-	PetscErrorCode CalculateObjFunction_Simple();
 
 	PetscErrorCode ObjFunctionTime(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 	PetscErrorCode (System::*CalculateObjFunctionTime) (Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
@@ -139,6 +143,7 @@ class System
 	PetscErrorCode CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax, PetscInt & NumObjFunct);
 
 	PetscErrorCode ProcessObjFunctionTime();
+
 
 	PetscErrorCode ProcessGradient();
 
@@ -154,24 +159,7 @@ class System
 
 	PetscErrorCode PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt & ptime);
 
-	/*
-	 * Constraints
-	 */
-	PetscErrorCode VolumeConstraint();
 
-	void VolumeConstraintGradient();
-
-	PetscErrorCode SRVConstraint();
-
-	PetscErrorCode SRVConstraintGradient();
-
-	/*
-	 * Penalty Term
-	 */
-
-	PetscErrorCode PenaltyTerm();
-
-	PetscErrorCode PenaltyTermGradient();
 
 	/*
 	 * Calculate partial derivatives and print them
@@ -221,6 +209,8 @@ class System
 	PetscMPIInt rank;
 
 	arrayBeads 		     allbeadsData;
+
+	EDGEDATA			edgeData;
 
 	PetscInt             numEdges, numVertices;
 
@@ -341,7 +331,6 @@ class System
 	PetscReal FunctionValueGlobalOriginal;
 	PetscReal LocalVolConstraintValue, VolConstraintValue, LocalSRVConstraintValue, SRVConstraintValue;
 	PetscReal LocalPenaltyTermValue, PenaltyTermValue;
-	std::vector<PetscReal> NormalizedValue;
 	PetscReal theta;
 	std::vector<PetscReal> beta;
 	std::vector<std::vector<PetscReal> > gamma;
@@ -351,10 +340,22 @@ class System
 	Vec SRVGradient, PenaltyGradient;
 
 	/*
-	 * Map from the design index to the bead number.
-	 * It returns the bead node_id, which starts on 1.
+	 * Container with the element variables. It is a container
+	 * of containers, one for each variable, which contains
+	 * all the elements that depend on that variable
+	 *
+	 * Example: 3 variables, 7 elements
+	 *
+	 * 	Variable 1:		Elements: 2,3,4
+	 * 	Variable 2:		Elements: 1,5
+	 * 	Variable 1:		Elements: 6,7
 	 */
-	std::vector<PetscInt> design_beads;
+	std::vector<std::vector<PetscInt> > design_elements;
+
+	/*
+	 * Design variables
+	 */
+	std::vector<PetscScalar> alphaMaxInit;
 
 
 	/*
