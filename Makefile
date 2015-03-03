@@ -3,7 +3,7 @@ PETSC_DIR := /home/miguel/petsc
 PETSC_ARCH := linux-mpich
 
 
-program_CXX_SRCS = mainbeads.C constitutivelaw.C system.C vechistory.C
+program_CXX_SRCS = mainbeads.C constitutivelaw.C system.C MMA.C vechistory.C
 program_CXX_OBJS = ${program_CXX_SRCS:.C=.o}
 
 LDFLAGS = -larmadillo
@@ -112,6 +112,8 @@ mainbeads.o: /usr/include/wchar.h
 mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
+mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
+mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 mainbeads.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -120,20 +122,15 @@ mainbeads.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-mainbeads.o: /usr/include/c++/4.8/complex.h /usr/include/complex.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 mainbeads.o: /home/miguel/petsc/include/petscerror.h
 mainbeads.o: /home/miguel/petsc/include/petscviewertypes.h
 mainbeads.o: /home/miguel/petsc/include/petscoptions.h
 mainbeads.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-mainbeads.o: /usr/include/xlocale.h /usr/include/stdlib.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
-mainbeads.o: /usr/include/endian.h
+mainbeads.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
+mainbeads.o: /usr/include/time.h /usr/include/endian.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/endian.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/sys/select.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/select.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
@@ -142,23 +139,13 @@ mainbeads.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 mainbeads.o: /usr/include/alloca.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/limits.h
+mainbeads.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
+mainbeads.o: /usr/include/limits.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 mainbeads.o: /usr/include/linux/limits.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-mainbeads.o: /usr/include/signal.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/signum.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/bits/param.h
-mainbeads.o: /usr/include/linux/param.h
-mainbeads.o: /usr/include/x86_64-linux-gnu/asm/param.h
-mainbeads.o: /usr/include/asm-generic/param.h /usr/include/c++/4.8/utility
+mainbeads.o: /usr/include/c++/4.8/utility
 mainbeads.o: /usr/include/c++/4.8/bits/stl_relops.h
 mainbeads.o: /usr/include/c++/4.8/iostream /usr/include/c++/4.8/ostream
 mainbeads.o: /usr/include/c++/4.8/ios /usr/include/c++/4.8/iosfwd
@@ -191,7 +178,7 @@ mainbeads.o: /usr/include/c++/4.8/streambuf
 mainbeads.o: /usr/include/c++/4.8/bits/streambuf.tcc
 mainbeads.o: /usr/include/c++/4.8/bits/basic_ios.h
 mainbeads.o: /usr/include/c++/4.8/bits/locale_facets.h
-mainbeads.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
+mainbeads.o: /usr/include/c++/4.8/cwctype
 mainbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 mainbeads.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 mainbeads.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -647,52 +634,31 @@ mainbeads.o: /home/miguel/petsc/include/petscfetypes.h
 mainbeads.o: /home/miguel/petsc/include/petscdstypes.h
 mainbeads.o: /usr/include/c++/4.8/iomanip vechistory.h
 mainbeads.o: /usr/include/c++/4.8/iterator
-mainbeads.o: /usr/include/c++/4.8/bits/stream_iterator.h vechistoryRK.h
-mainbeads.o: quadbeads.h
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpTNLP.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpUtils.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpTypes.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpoptConfig.h
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpDebug.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpReferenced.hpp
-mainbeads.o: /usr/include/c++/4.8/list /usr/include/c++/4.8/bits/stl_list.h
-mainbeads.o: /usr/include/c++/4.8/bits/list.tcc
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpException.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpJournalist.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpSmartPtr.hpp
-mainbeads.o: /usr/include/c++/4.8/cstdarg
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpAlgTypes.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpReturnCodes.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpReturnCodes_inc.h
-mainbeads.o: /usr/include/c++/4.8/map /usr/include/c++/4.8/bits/stl_tree.h
-mainbeads.o: /usr/include/c++/4.8/bits/stl_map.h
-mainbeads.o: /usr/include/c++/4.8/bits/stl_multimap.h
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIteratesVector.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpCompoundVector.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpVector.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpTaggedObject.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpObserver.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpCachedResults.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIpoptData.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpSymMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpOptionsList.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpRegOptions.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpTimingStatistics.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/build/include/coin/IpTimedTask.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIpoptCalculatedQuantities.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpTNLPAdapter.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpNLP.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpOrigIpoptNLP.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpIpoptNLP.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpNLPScaling.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Algorithm/IpRestoIpoptNLP.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpCompoundMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpCompoundSymMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpIdentityMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpDiagMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/LinAlg/IpZeroMatrix.hpp
-mainbeads.o: /home/miguel/Ipopt-3.11.9/Ipopt/src/Interfaces/IpIpoptApplication.hpp
+mainbeads.o: /usr/include/c++/4.8/bits/stream_iterator.h vechistoryRK.h MMA.h
+mainbeads.o: /home/miguel/petsc/include/petsc.h
+mainbeads.o: /home/miguel/petsc/include/petscbag.h
+mainbeads.o: /home/miguel/petsc/include/petsctime.h
+mainbeads.o: /home/miguel/petsc/include/petscthreadcomm.h
+mainbeads.o: /home/miguel/petsc/include/petscbt.h
+mainbeads.o: /home/miguel/petsc/include/petscctable.h
+mainbeads.o: /home/miguel/petsc/include/petscmatlab.h
+mainbeads.o: /home/miguel/petsc/include/petscdraw.h
+mainbeads.o: /home/miguel/petsc/include/petscdmda.h
+mainbeads.o: /home/miguel/petsc/include/petscpf.h
+mainbeads.o: /home/miguel/petsc/include/petscao.h
+mainbeads.o: /home/miguel/petsc/include/petscfe.h
+mainbeads.o: /home/miguel/petsc/include/petscdt.h
+mainbeads.o: /home/miguel/petsc/include/petscdmcomposite.h
+mainbeads.o: /home/miguel/petsc/include/petscdmpatch.h
+mainbeads.o: /home/miguel/petsc/include/petscdmplex.h
+mainbeads.o: /home/miguel/petsc/include/petscfv.h
+mainbeads.o: /home/miguel/petsc/include/petscdmredundant.h
+mainbeads.o: /home/miguel/petsc/include/petscdmshell.h
+mainbeads.o: /home/miguel/petsc/include/petscdmsliced.h
+mainbeads.o: /home/miguel/petsc/include/petscds.h
+mainbeads.o: /home/miguel/petsc/include/petsccharacteristic.h
+mainbeads.o: /home/miguel/petsc/include/petsctao.h
+mainbeads.o: /home/miguel/petsc/include/petsctaolinesearch.h
 constitutivelaw.o: constitutivelaw.h beadsdata.h /usr/include/c++/4.8/vector
 constitutivelaw.o: /usr/include/c++/4.8/bits/stl_algobase.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
@@ -738,8 +704,7 @@ constitutivelaw.o: /usr/include/c++/4.8/bits/localefwd.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++locale.h
 constitutivelaw.o: /usr/include/c++/4.8/clocale /usr/include/locale.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/locale.h
-constitutivelaw.o: /usr/include/xlocale.h /usr/include/c++/4.8/cctype
-constitutivelaw.o: /usr/include/ctype.h
+constitutivelaw.o: /usr/include/c++/4.8/cctype /usr/include/ctype.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/types.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/typesizes.h
 constitutivelaw.o: /usr/include/endian.h
@@ -769,7 +734,7 @@ constitutivelaw.o: /usr/include/c++/4.8/streambuf
 constitutivelaw.o: /usr/include/c++/4.8/bits/streambuf.tcc
 constitutivelaw.o: /usr/include/c++/4.8/bits/basic_ios.h
 constitutivelaw.o: /usr/include/c++/4.8/bits/locale_facets.h
-constitutivelaw.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
+constitutivelaw.o: /usr/include/c++/4.8/cwctype
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 constitutivelaw.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -796,6 +761,8 @@ constitutivelaw.o: /usr/include/_G_config.h
 constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
+constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
+constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 constitutivelaw.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -804,15 +771,11 @@ constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-constitutivelaw.o: /usr/include/c++/4.8/complex.h /usr/include/complex.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 constitutivelaw.o: /home/miguel/petsc/include/petscerror.h
 constitutivelaw.o: /home/miguel/petsc/include/petscviewertypes.h
 constitutivelaw.o: /home/miguel/petsc/include/petscoptions.h
 constitutivelaw.o: /home/miguel/petsc/include/petsclog.h
 constitutivelaw.o: /usr/include/string.h /usr/include/stdlib.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/types.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/select.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/select.h
@@ -821,24 +784,12 @@ constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/time.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 constitutivelaw.o: /usr/include/alloca.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/param.h
+constitutivelaw.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
 constitutivelaw.o: /usr/include/limits.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 constitutivelaw.o: /usr/include/linux/limits.h
 constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-constitutivelaw.o: /usr/include/signal.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/signum.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/bits/param.h
-constitutivelaw.o: /usr/include/linux/param.h
-constitutivelaw.o: /usr/include/x86_64-linux-gnu/asm/param.h
-constitutivelaw.o: /usr/include/asm-generic/param.h
 constitutivelaw.o: /home/miguel/petsc/include/petscsftypes.h
 constitutivelaw.o: /home/miguel/petsc/include/petscistypes.h
 constitutivelaw.o: /home/miguel/petsc/include/petscviewer.h
@@ -1325,6 +1276,8 @@ system.o: /usr/include/_G_config.h /usr/include/wchar.h
 system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 system.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
+system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
+system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 system.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 system.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 system.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -1333,19 +1286,15 @@ system.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 system.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 system.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 system.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-system.o: /usr/include/c++/4.8/complex.h /usr/include/complex.h
-system.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 system.o: /home/miguel/petsc/include/petscerror.h
 system.o: /home/miguel/petsc/include/petscviewertypes.h
 system.o: /home/miguel/petsc/include/petscoptions.h
 system.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-system.o: /usr/include/xlocale.h /usr/include/stdlib.h
-system.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
-system.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
-system.o: /usr/include/endian.h /usr/include/x86_64-linux-gnu/bits/endian.h
+system.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
+system.o: /usr/include/time.h /usr/include/endian.h
+system.o: /usr/include/x86_64-linux-gnu/bits/endian.h
 system.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
 system.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
-system.o: /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h
 system.o: /usr/include/x86_64-linux-gnu/sys/select.h
 system.o: /usr/include/x86_64-linux-gnu/bits/select.h
 system.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
@@ -1354,23 +1303,13 @@ system.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 system.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 system.o: /usr/include/alloca.h
 system.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-system.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/limits.h
+system.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
+system.o: /usr/include/limits.h
 system.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 system.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 system.o: /usr/include/linux/limits.h
 system.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-system.o: /usr/include/signal.h /usr/include/x86_64-linux-gnu/bits/signum.h
-system.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
-system.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
-system.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
-system.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
-system.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
-system.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
-system.o: /usr/include/x86_64-linux-gnu/bits/param.h
-system.o: /usr/include/linux/param.h
-system.o: /usr/include/x86_64-linux-gnu/asm/param.h
-system.o: /usr/include/asm-generic/param.h /usr/include/c++/4.8/utility
-system.o: /usr/include/c++/4.8/bits/stl_relops.h
+system.o: /usr/include/c++/4.8/utility /usr/include/c++/4.8/bits/stl_relops.h
 system.o: /usr/include/c++/4.8/iostream /usr/include/c++/4.8/ostream
 system.o: /usr/include/c++/4.8/ios /usr/include/c++/4.8/iosfwd
 system.o: /usr/include/c++/4.8/bits/stringfwd.h
@@ -1402,7 +1341,7 @@ system.o: /usr/include/c++/4.8/streambuf
 system.o: /usr/include/c++/4.8/bits/streambuf.tcc
 system.o: /usr/include/c++/4.8/bits/basic_ios.h
 system.o: /usr/include/c++/4.8/bits/locale_facets.h
-system.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
+system.o: /usr/include/c++/4.8/cwctype
 system.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 system.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 system.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
@@ -1858,6 +1797,154 @@ system.o: /usr/include/c++/4.8/iterator
 system.o: /usr/include/c++/4.8/bits/stream_iterator.h vechistoryRK.h
 system.o: /usr/include/dirent.h /usr/include/x86_64-linux-gnu/bits/dirent.h
 system.o: /home/miguel/petsc/include/petsctime.h
+MMA.o: MMA.h /home/miguel/petsc/include/petsc.h
+MMA.o: /home/miguel/petsc/include/petscbag.h
+MMA.o: /home/miguel/petsc/include/petscsys.h
+MMA.o: /home/miguel/petsc/linux-mpich-opt/include/petscconf.h
+MMA.o: /home/miguel/petsc/linux-mpich-opt/include/petscfix.h
+MMA.o: /home/miguel/petsc/include/petscversion.h
+MMA.o: /home/miguel/petsc/linux-mpich-opt/include/mpi.h
+MMA.o: /home/miguel/petsc/linux-mpich-opt/include/mpio.h /usr/include/stdio.h
+MMA.o: /usr/include/features.h /usr/include/stdc-predef.h
+MMA.o: /usr/include/x86_64-linux-gnu/sys/cdefs.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/wordsize.h
+MMA.o: /usr/include/x86_64-linux-gnu/gnu/stubs.h
+MMA.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stddef.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/types.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/typesizes.h /usr/include/libio.h
+MMA.o: /usr/include/_G_config.h /usr/include/wchar.h
+MMA.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
+MMA.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
+MMA.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
+MMA.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/huge_vall.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/inf.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/nan.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
+MMA.o: /home/miguel/petsc/include/petscerror.h
+MMA.o: /home/miguel/petsc/include/petscviewertypes.h
+MMA.o: /home/miguel/petsc/include/petscoptions.h
+MMA.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
+MMA.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
+MMA.o: /usr/include/time.h /usr/include/endian.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/endian.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
+MMA.o: /usr/include/x86_64-linux-gnu/sys/select.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/select.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/time.h
+MMA.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
+MMA.o: /usr/include/alloca.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
+MMA.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
+MMA.o: /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
+MMA.o: /usr/include/linux/limits.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
+MMA.o: /home/miguel/petsc/include/petsctime.h
+MMA.o: /home/miguel/petsc/include/petscthreadcomm.h
+MMA.o: /home/miguel/petsc/include/petscbt.h
+MMA.o: /home/miguel/petsc/include/petscviewer.h
+MMA.o: /home/miguel/petsc/include/petscdrawtypes.h
+MMA.o: /home/miguel/petsc/include/petscctable.h
+MMA.o: /home/miguel/petsc/include/petscmatlab.h
+MMA.o: /home/miguel/petsc/include/petscdraw.h
+MMA.o: /home/miguel/petsc/include/petscdmda.h
+MMA.o: /home/miguel/petsc/include/petscdm.h
+MMA.o: /home/miguel/petsc/include/petscmat.h
+MMA.o: /home/miguel/petsc/include/petscvec.h
+MMA.o: /home/miguel/petsc/include/petscis.h
+MMA.o: /home/miguel/petsc/include/petscsftypes.h
+MMA.o: /home/miguel/petsc/include/petscistypes.h
+MMA.o: /home/miguel/petsc/include/petscdmtypes.h
+MMA.o: /home/miguel/petsc/include/petscfetypes.h
+MMA.o: /home/miguel/petsc/include/petscdstypes.h
+MMA.o: /home/miguel/petsc/include/petscdmdatypes.h
+MMA.o: /home/miguel/petsc/include/petscpf.h
+MMA.o: /home/miguel/petsc/include/petscao.h
+MMA.o: /home/miguel/petsc/include/petscfe.h
+MMA.o: /home/miguel/petsc/include/petscdt.h
+MMA.o: /home/miguel/petsc/include/petscdmcomposite.h
+MMA.o: /home/miguel/petsc/include/petscdmpatch.h
+MMA.o: /home/miguel/petsc/include/petscdmplex.h
+MMA.o: /home/miguel/petsc/include/petscfv.h
+MMA.o: /home/miguel/petsc/include/petscfvtypes.h
+MMA.o: /home/miguel/petsc/include/petscdmredundant.h
+MMA.o: /home/miguel/petsc/include/petscdmshell.h
+MMA.o: /home/miguel/petsc/include/petscdmsliced.h
+MMA.o: /home/miguel/petsc/include/petscds.h
+MMA.o: /home/miguel/petsc/include/petsccharacteristic.h
+MMA.o: /home/miguel/petsc/include/petscts.h
+MMA.o: /home/miguel/petsc/include/petscsnes.h
+MMA.o: /home/miguel/petsc/include/petscksp.h
+MMA.o: /home/miguel/petsc/include/petscpc.h
+MMA.o: /home/miguel/petsc/include/petsctao.h
+MMA.o: /home/miguel/petsc/include/petsctaolinesearch.h
+MMA.o: /usr/include/c++/4.8/iostream
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/os_defines.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/cpu_defines.h
+MMA.o: /usr/include/c++/4.8/ostream /usr/include/c++/4.8/ios
+MMA.o: /usr/include/c++/4.8/iosfwd /usr/include/c++/4.8/bits/stringfwd.h
+MMA.o: /usr/include/c++/4.8/bits/memoryfwd.h
+MMA.o: /usr/include/c++/4.8/bits/postypes.h /usr/include/c++/4.8/cwchar
+MMA.o: /usr/include/c++/4.8/exception
+MMA.o: /usr/include/c++/4.8/bits/atomic_lockfree_defines.h
+MMA.o: /usr/include/c++/4.8/bits/char_traits.h
+MMA.o: /usr/include/c++/4.8/bits/stl_algobase.h
+MMA.o: /usr/include/c++/4.8/bits/functexcept.h
+MMA.o: /usr/include/c++/4.8/bits/exception_defines.h
+MMA.o: /usr/include/c++/4.8/bits/cpp_type_traits.h
+MMA.o: /usr/include/c++/4.8/ext/type_traits.h
+MMA.o: /usr/include/c++/4.8/ext/numeric_traits.h
+MMA.o: /usr/include/c++/4.8/bits/stl_pair.h /usr/include/c++/4.8/bits/move.h
+MMA.o: /usr/include/c++/4.8/bits/concept_check.h
+MMA.o: /usr/include/c++/4.8/bits/stl_iterator_base_types.h
+MMA.o: /usr/include/c++/4.8/bits/stl_iterator_base_funcs.h
+MMA.o: /usr/include/c++/4.8/debug/debug.h
+MMA.o: /usr/include/c++/4.8/bits/stl_iterator.h
+MMA.o: /usr/include/c++/4.8/bits/localefwd.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++locale.h
+MMA.o: /usr/include/c++/4.8/clocale /usr/include/locale.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/locale.h
+MMA.o: /usr/include/c++/4.8/cctype /usr/include/ctype.h
+MMA.o: /usr/include/c++/4.8/bits/ios_base.h
+MMA.o: /usr/include/c++/4.8/ext/atomicity.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/gthr.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/gthr-default.h
+MMA.o: /usr/include/pthread.h /usr/include/sched.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/sched.h
+MMA.o: /usr/include/x86_64-linux-gnu/bits/setjmp.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/atomic_word.h
+MMA.o: /usr/include/c++/4.8/bits/locale_classes.h /usr/include/c++/4.8/string
+MMA.o: /usr/include/c++/4.8/bits/allocator.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++allocator.h
+MMA.o: /usr/include/c++/4.8/ext/new_allocator.h /usr/include/c++/4.8/new
+MMA.o: /usr/include/c++/4.8/bits/ostream_insert.h
+MMA.o: /usr/include/c++/4.8/bits/cxxabi_forced.h
+MMA.o: /usr/include/c++/4.8/bits/stl_function.h
+MMA.o: /usr/include/c++/4.8/backward/binders.h
+MMA.o: /usr/include/c++/4.8/bits/range_access.h
+MMA.o: /usr/include/c++/4.8/bits/basic_string.h
+MMA.o: /usr/include/c++/4.8/bits/basic_string.tcc
+MMA.o: /usr/include/c++/4.8/bits/locale_classes.tcc
+MMA.o: /usr/include/c++/4.8/streambuf /usr/include/c++/4.8/bits/streambuf.tcc
+MMA.o: /usr/include/c++/4.8/bits/basic_ios.h
+MMA.o: /usr/include/c++/4.8/bits/locale_facets.h /usr/include/c++/4.8/cwctype
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
+MMA.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
+MMA.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h
+MMA.o: /usr/include/c++/4.8/bits/locale_facets.tcc
+MMA.o: /usr/include/c++/4.8/bits/basic_ios.tcc
+MMA.o: /usr/include/c++/4.8/bits/ostream.tcc /usr/include/c++/4.8/istream
+MMA.o: /usr/include/c++/4.8/bits/istream.tcc
 vechistory.o: vechistory.h /home/miguel/petsc/include/petscvec.h
 vechistory.o: /home/miguel/petsc/include/petscis.h
 vechistory.o: /home/miguel/petsc/include/petscsys.h
@@ -1879,6 +1966,8 @@ vechistory.o: /usr/include/wchar.h
 vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdarg.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/stdio_lim.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sys_errlist.h
+vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint.h
+vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/stdint-gcc.h
 vechistory.o: /home/miguel/petsc/include/petscmath.h /usr/include/math.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/huge_val.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/huge_valf.h
@@ -1887,24 +1976,15 @@ vechistory.o: /usr/include/x86_64-linux-gnu/bits/inf.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/nan.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/mathdef.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/mathcalls.h
-vechistory.o: /usr/include/c++/4.8/complex.h
-vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
-vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/os_defines.h
-vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/cpu_defines.h
-vechistory.o: /usr/include/complex.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/cmathcalls.h
 vechistory.o: /home/miguel/petsc/include/petscerror.h
 vechistory.o: /home/miguel/petsc/include/petscviewertypes.h
 vechistory.o: /home/miguel/petsc/include/petscoptions.h
 vechistory.o: /home/miguel/petsc/include/petsclog.h /usr/include/string.h
-vechistory.o: /usr/include/xlocale.h /usr/include/stdlib.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/waitflags.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/waitstatus.h
-vechistory.o: /usr/include/endian.h
+vechistory.o: /usr/include/stdlib.h /usr/include/x86_64-linux-gnu/sys/types.h
+vechistory.o: /usr/include/time.h /usr/include/endian.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/endian.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/byteswap.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/byteswap-16.h
-vechistory.o: /usr/include/x86_64-linux-gnu/sys/types.h /usr/include/time.h
 vechistory.o: /usr/include/x86_64-linux-gnu/sys/select.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/select.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigset.h
@@ -1913,29 +1993,21 @@ vechistory.o: /usr/include/x86_64-linux-gnu/sys/sysmacros.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h
 vechistory.o: /usr/include/alloca.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/stdlib-float.h
-vechistory.o: /usr/include/x86_64-linux-gnu/sys/param.h /usr/include/limits.h
+vechistory.o: /usr/lib/gcc/x86_64-linux-gnu/4.8/include/xmmintrin.h
+vechistory.o: /usr/include/limits.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/posix1_lim.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/local_lim.h
 vechistory.o: /usr/include/linux/limits.h
 vechistory.o: /usr/include/x86_64-linux-gnu/bits/posix2_lim.h
-vechistory.o: /usr/include/signal.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/signum.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/siginfo.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigaction.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigcontext.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigstack.h
-vechistory.o: /usr/include/x86_64-linux-gnu/sys/ucontext.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/sigthread.h
-vechistory.o: /usr/include/x86_64-linux-gnu/bits/param.h
-vechistory.o: /usr/include/linux/param.h
-vechistory.o: /usr/include/x86_64-linux-gnu/asm/param.h
-vechistory.o: /usr/include/asm-generic/param.h
 vechistory.o: /home/miguel/petsc/include/petscsftypes.h
 vechistory.o: /home/miguel/petsc/include/petscistypes.h
 vechistory.o: /home/miguel/petsc/include/petscviewer.h
 vechistory.o: /home/miguel/petsc/include/petscdrawtypes.h
 vechistory.o: /usr/include/c++/4.8/cassert /usr/include/assert.h
 vechistory.o: /usr/include/c++/4.8/iterator
+vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/c++config.h
+vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/os_defines.h
+vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/cpu_defines.h
 vechistory.o: /usr/include/c++/4.8/bits/stl_iterator_base_types.h
 vechistory.o: /usr/include/c++/4.8/bits/stl_iterator_base_funcs.h
 vechistory.o: /usr/include/c++/4.8/bits/concept_check.h
@@ -1987,7 +2059,7 @@ vechistory.o: /usr/include/c++/4.8/streambuf
 vechistory.o: /usr/include/c++/4.8/bits/streambuf.tcc
 vechistory.o: /usr/include/c++/4.8/bits/basic_ios.h
 vechistory.o: /usr/include/c++/4.8/bits/locale_facets.h
-vechistory.o: /usr/include/c++/4.8/cwctype /usr/include/wctype.h
+vechistory.o: /usr/include/c++/4.8/cwctype
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_base.h
 vechistory.o: /usr/include/c++/4.8/bits/streambuf_iterator.h
 vechistory.o: /usr/include/x86_64-linux-gnu/c++/4.8/bits/ctype_inline.h

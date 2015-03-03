@@ -26,7 +26,7 @@
 -loading 1
 -matlabhistory 0
 -alphaMaxInit 0.0
--sensitivities 1
+-sensitivities 0
 -initial_design 1.5
 -printdisplacements 1
 -ts_type rk

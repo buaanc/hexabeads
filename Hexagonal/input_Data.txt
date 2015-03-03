@@ -3,7 +3,7 @@
 ###############################
 ## Total transient analysis time
 #totaltime
-1000
+600
 ## Time step for implicit scheme
 #timestep
 0.1
@@ -41,16 +41,14 @@
 ## Objective function penalty weight
 ## 0 = no penalty added to cost function
 ## >0 = weight value
-#Weight
-0
 ## Space and Time norm parameter
 #Norm
-1
+10
 ###############################
 ##  CONSTRAINT FUNCTION      ##
 ###############################
 #NumberOfOptimizationConstraints
-0
+2
 ##  	1 = volume for one (strong) phase
 ## 		2 = SRV (volume constraint also should be imposed when SRV is selected)
 ## 		3 = volume for two material phases
@@ -63,18 +61,16 @@
 ## Constraint type | maximum number of intruders | equality tolerance
 ## Note: if equality tolerance equals to zero => inequality constraint
 #Constraints
-1	30	0.01
-2	30	0.01
+1	1	0.01
+2	1	0.01
 ###############################
 ##  DESIGN VARIABLES         ##
 ###############################
 ## Minimum volume fraction 
-#vfmin
-0.001
-## Penalization factor for the volume fraction (SIMP approach)
-##	p | q
-#simp
-1		1
+#xmax
+1.5
+#xmix 
+0.2
 ###############################
 ##  CONVERGENCE PARAMETERS   ##
 ###############################

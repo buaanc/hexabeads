@@ -155,10 +155,62 @@ class System
 		problemData.printdisplacements = 1;
 		designData.printforces = true;
 		problemData.printstephistory = true;
+
+		Solve();
+		ProcessObjFunctionTime();
+
+		RestartSolver();
+
 	}
 
 	PetscErrorCode PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt & ptime);
 
+	/*
+	 * Return design variable
+	 */
+	Vec get_design_variables(){	return alphaMaxInitial; }
+
+	Vec get_gradient(){	return Mu; }
+
+	Vec get_xmin_vec(){return Xmin;}
+
+	Vec get_xmax_vec(){return Xmax;}
+
+	Vec get_xold(){return Xold;}
+
+	PetscInt get_number_of_design_variables(){return designData.N_DesignVariables;}
+
+	PetscScalar & get_xmin(){return designData.xmin;}
+
+	PetscScalar & get_xmax(){return designData.xmax;}
+
+	PetscScalar * get_ObjFunction(){return &FunctionValueGlobal;}
+
+	/*
+	 * Dummy constraint since the MMA implemented in PETSc doesn't accept zero
+	 * constraints
+	 */
+	Vec gradient_constraint;
+	PetscScalar * constraint;
+
+	PetscScalar * get_constraint(){
+
+		VecSum(gradient_constraint,&constraint[0]);
+
+		constraint[0] -= 1000000;
+		return constraint;
+	}
+
+	Vec * get_constraint_gradient(){return &gradient_constraint;}
+
+
+
+
+	/*
+	 * Routine for the optimizer
+	 */
+
+	PetscErrorCode OptimizerRoutine();
 
 
 	/*
@@ -355,7 +407,7 @@ class System
 	/*
 	 * Design variables
 	 */
-	std::vector<PetscScalar> alphaMaxInit;
+	Vec alphaMaxInitial, Xmin, Xmax, Xold;
 
 
 	/*

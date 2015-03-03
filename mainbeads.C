@@ -12,8 +12,7 @@ static char help[] = "This example demonstrates the use of DMNetwork interface f
 
 
 #include "system.h"
-#include "quadbeads.h"
-#include "IpIpoptApplication.hpp"
+#include "MMA.h"
 #undef __FUNCT__
 #define __FUNCT__ "main"
 int main(int argc,char ** argv)
@@ -25,105 +24,149 @@ int main(int argc,char ** argv)
 	ierr =PetscOptionsInt("-sensitivities", "1 for running just the sensitivities and the FD comparison, 0 for running the optimization","", 0, &sensitivities, NULL);
 
 	if (sensitivities){
-		System QuadBeadsDummy;
+		System hexabeadsDummy;
 
 
 
 		/*
 		 * Initialize and read data
 		 */
-		ierr = QuadBeadsDummy.InitializeData();
+		ierr = hexabeadsDummy.InitializeData();
 
 		/*
 		 * Set up the DM Network
 		 */
-		ierr = QuadBeadsDummy.SetUpDMNetwork();
+		ierr = hexabeadsDummy.SetUpDMNetwork();
 
 		/*
 		 * Create PETSc Vectors and matrices
 		 */
-		ierr = QuadBeadsDummy.CreatePETScObjects();
+		ierr = hexabeadsDummy.CreatePETScObjects();
 
 
-		QuadBeadsDummy.problemData.printstephistory = true;
+		hexabeadsDummy.problemData.printstephistory = true;
 
 		/*
 		 * Set up solver
 		 */
-		ierr = QuadBeadsDummy.SetUpSolver();
+		ierr = hexabeadsDummy.SetUpSolver();
 
-		QuadBeadsDummy.ProcessOptimalSolution();
+
 
 
 		/*
 		 * Solve
 		 */
-		ierr = QuadBeadsDummy.Solve();
+		ierr = hexabeadsDummy.Solve();
 
 
 		/*
 		 * Calculate Obj Function
 		 */
-		ierr = QuadBeadsDummy.ProcessObjFunctionTime();
+		ierr = hexabeadsDummy.ProcessObjFunctionTime();
 
 		/*
 		 * Fix the value of FunctionValueGlobalOriginal to use it in the FD;
 		 */
-		QuadBeadsDummy.FunctionValueGlobalOriginal = QuadBeadsDummy.FunctionValueGlobal;
+		hexabeadsDummy.FunctionValueGlobalOriginal = hexabeadsDummy.FunctionValueGlobal;
 
 		/*
 		 * Adjoint Analysis
 		 */
 		std::cout<<"Adjoint Analysis"<<std::endl;
-		ierr = QuadBeadsDummy.AdjointSolve();
+		ierr = hexabeadsDummy.AdjointSolve();
 
-		ierr = QuadBeadsDummy.ProcessGradient();
+		ierr = hexabeadsDummy.ProcessGradient();
 
 		/*
 		 * Check sensitivities
 		 */
-		ierr = QuadBeadsDummy.FiniteDifference();
+		ierr = hexabeadsDummy.FiniteDifference();
 
-		ierr = QuadBeadsDummy.CheckGradient();
+		ierr = hexabeadsDummy.CheckGradient();
 
 	}
 	else{
 
-//		SmartPtr<TNLP> OptProblem = new QuadBeads;
-//
-//
-//		// Create a new instance of IpoptApplication
-//		//  (use a SmartPtr, not raw)
-//		// We are using the factory, since this allows us to compile this
-//		// example with an Ipopt Windows DLL
-//		SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
-//		// Change some options
-//		// Note: The following choices are only examples, they might not be
-//		//       suitable for your optimization problem.
-//		app->Options()->SetNumericValue("tol", 1e-6);
-//		app->Options()->SetStringValue("mu_strategy", "adaptive");
-//		app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-//		// The following overwrites the default name (ipopt.opt) of the
-//		// options file
-//		// app->Options()->SetStringValue("option_file_name", "hs071.opt");
-//
-//		// Intialize the IpoptApplication and process the options
-//		ApplicationReturnStatus status;
-//		status = app->Initialize();
-//		if (status != Solve_Succeeded) {
-//		std::cout << std::endl << std::endl << "*** Error during initialization!" << std::endl;
-//		return (int) status;
-//		}
-//
-//		// Ask Ipopt to solve the problem
-//		status = app->OptimizeTNLP(OptProblem);
-//
-//		if (status == Solve_Succeeded) {
-//		std::cout << std::endl << std::endl << "*** The problem solved!" << std::endl;
-//		}
-//		else {
-//		std::cout << std::endl << std::endl << "*** The problem FAILED!" << std::endl;
-//		}
+		System hexabeadsDummy;
+
+		/*
+		 * Initialize and read data
+		 */
+		ierr = hexabeadsDummy.InitializeData();
+
+		/*
+		 * Set up the DM Network
+		 */
+		ierr = hexabeadsDummy.SetUpDMNetwork();
+
+		/*
+		 * Create PETSc Vectors and matrices
+		 */
+		ierr = hexabeadsDummy.CreatePETScObjects();
+
+		/*
+		 * Set up solver
+		 */
+		ierr = hexabeadsDummy.SetUpSolver();
+
+		MMA *mma;
+		PetscInt itr=0;
+
+		Vec design_variables = hexabeadsDummy.get_design_variables();
+		Vec Xold = hexabeadsDummy.get_xold();
+		Vec gradient = hexabeadsDummy.get_gradient();
+
+		PetscScalar * ObjFunction = hexabeadsDummy.get_ObjFunction();
+		PetscInt n_design_variables = hexabeadsDummy.get_number_of_design_variables();
+		mma = new MMA(n_design_variables,1.0,design_variables);
+
+		Vec Xmin = hexabeadsDummy.get_xmin_vec();
+		Vec Xmax = hexabeadsDummy.get_xmax_vec();
+
+		Vec * constraint_gradient = hexabeadsDummy.get_constraint_gradient();
+
+
+		PetscInt maxItr = 400;
+
+		PetscReal movlim = 0.2;
+
+		// STEP 7: OPTIMIZATION LOOP
+		  PetscScalar ch = 1.0;
+		  double t1,t2;
+		  while (itr < maxItr && ch > 0.01){
+			// Update iteration counter
+			itr++;
+
+			// start timer
+			t1 = MPI_Wtime();
+
+
+			// Filter sensitivities (chainrule)
+			ierr = hexabeadsDummy.OptimizerRoutine();
+
+			PetscScalar * constraint = hexabeadsDummy.get_constraint();
+
+			// Sets outer movelimits on design variables
+			ierr = mma->SetOuterMovelimit(hexabeadsDummy.get_xmin(),hexabeadsDummy.get_xmax(),movlim,design_variables,Xmin,Xmax); CHKERRQ(ierr);
+
+			// Update design by MMA
+			ierr = mma->Update(design_variables,gradient,constraint,constraint_gradient,Xmin,Xmax); CHKERRQ(ierr);
+
+			// Inf norm on the design change
+			ch = mma->DesignChange(design_variables,Xold);
+
+			// stop timer
+			t2 = MPI_Wtime();
+
+			// Print to screen
+			PetscPrintf(PETSC_COMM_WORLD,"It.: %i, obj.: %f, g[0]: %f, ch.: %f, time: %f\n",
+						itr,*ObjFunction,0, ch,t2-t1);
+
+		  }
+
+
+			hexabeadsDummy.ProcessOptimalSolution();
 
 	}
 

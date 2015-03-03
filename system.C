@@ -109,6 +109,8 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
   EDGEDATA elementData;
   PetscInt key, offsetd_eStart;
 
+	PetscScalar * alphaMaxInitialarr;
+	VecGetArray(sistema->alphaMaxInitial,&alphaMaxInitialarr);
 
 
   unsigned int k = 0;
@@ -148,10 +150,11 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 	// Set initial design value, first, we need to know which variable group it belongs to
 	DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
 	elementData = (EDGEDATA)(arr + offsetd_eStart);
-	sistema->elementFunction.set_alphaP_initial(sistema->alphaMaxInit[elementData->VariableGroup]);
+
+
+	sistema->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 #ifdef DEBUG
-			std::cout<<"variable value = "<<std::setprecision(10)<<sistema->alphaMaxInit[elementData->VariableGroup]<<std::endl;
 
 			double & alphaPInit = sistema->elementFunction.get_alphaP_initial();
 			std::cout<<"alphaP Init = "<<std::setprecision(10)<<alphaPInit<<std::endl;
@@ -232,6 +235,8 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 #endif
 
   ierr = VecRestoreArray(sistema->alphaMax,&alphaMaxarr);CHKERRQ(ierr);
+
+  ierr = VecRestoreArray(sistema->alphaMaxInitial,&alphaMaxInitialarr);CHKERRQ(ierr);
 
   // We need to loop over the beads to multiply the farr vector (only the velocity components) with the inverse of the mass
   PetscInt vStart, vEnd, v;
@@ -370,6 +375,11 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 	  EDGEDATA elementData;
 	  PetscInt key, offsetd_eStart;
 
+		PetscScalar * alphaMaxInitialarr;
+		VecGetArray(sistema->alphaMaxInitial,&alphaMaxInitialarr);
+
+
+
 
 	  // Index for alphaMaxarr
 	  unsigned int k = 0;
@@ -408,7 +418,8 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 		// Set initial design value, first, we need to know which variable group it belongs to
 		DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
 		elementData = (EDGEDATA)(arr + offsetd_eStart);
-		sistema->elementFunction.set_alphaP_initial(sistema->alphaMaxInit[elementData->VariableGroup]);
+
+		sistema->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 		// Set the value of alphaMax. We need to do this to update
 		sistema->elementFunction.set_alphaMax(alphaMaxarr[k]);
@@ -431,6 +442,10 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 	  }
 
 	  // Restore the modified vectors
+
+	  ierr = VecRestoreArray(sistema->alphaMaxInitial,&alphaMaxInitialarr);
+
+
 	  ierr = VecRestoreArray(sistema->alphaMax,&alphaMaxarr);
 	  ierr = VecAssemblyBegin(sistema->alphaMax);
 	  ierr = VecAssemblyEnd(sistema->alphaMax);
@@ -628,6 +643,15 @@ System::~System()
 	VecDestroyVecs(Stages,&V_i);
 	VecDestroyVecs(Stages,&W_i);
 
+	VecDestroy(&alphaMaxInitial);
+
+	VecDestroy(&Xmin);
+	VecDestroy(&Xmax);
+	VecDestroy(&Xold);
+
+	VecDestroy(&gradient_constraint);
+	delete [] constraint;
+
 	delete [] parameters_indices;
 
 	VecDestroyVecs(designData.N_DesignVariables,&JACP);
@@ -644,6 +668,22 @@ System::~System()
 	delete [] ones;
 	delete [] Mdot_product_result;
 	PetscFinalize();
+}
+
+PetscErrorCode System::OptimizerRoutine(){
+
+	PetscErrorCode       ierr;
+
+	ierr = Solve();
+	ierr = ProcessObjFunctionTime();
+
+	ierr = AdjointSolve();
+
+	ierr = ProcessGradient();
+
+	ierr = RestartSolver();
+
+	return ierr;
 }
 
 PetscErrorCode System::InitializeData()
@@ -851,7 +891,15 @@ PetscErrorCode System::SetUpDMNetwork()
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 
+	  /* Create Petsc Vector for variables */
+	  VecCreate(PETSC_COMM_WORLD,&alphaMaxInitial);
+	  VecSetType(alphaMaxInitial,VECMPI);
+	  VecSetSizes(alphaMaxInitial,PETSC_DECIDE,designData.N_DesignVariables);
+
 	  std::ifstream finitialValue("input_InitialVariableValues.txt");
+
+	  PetscScalar * alphaMaxInitialarr;
+	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
 
@@ -863,10 +911,28 @@ PetscErrorCode System::SetUpDMNetwork()
 				if (finitialValue.good())
 					finitialValue>>design_value;
 			}
-		  alphaMaxInit.push_back(design_value);
+		  alphaMaxInitialarr[i] = design_value;
 
 
 	  }
+
+	  VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
+
+	  VecDuplicate(alphaMaxInitial,&Xmin);
+	  VecDuplicate(alphaMaxInitial,&Xmax);
+
+	  VecDuplicate(alphaMaxInitial,&Xold);
+
+	  VecDuplicate(alphaMaxInitial,&gradient_constraint);
+	  constraint = new PetscScalar[1];
+
+
+	  VecSet(Xmin,designData.xmin);
+	  VecSet(Xmax,designData.xmax);
+
+	  VecSet(Xmax,1.0);
+
+
 
 //	  std::cout<<"size alphaMax = "<<alphaMaxInit.size()<<std::endl;
 //	  std::cout<<"N_DesignVariables = "<<designData.N_DesignVariables<<std::endl;
@@ -1340,7 +1406,7 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 	  PetscInt      eStart,eEnd,vfrom,vto;
 	  const PetscScalar *uarr;
 	  PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
-	  PetscScalar   *farr, *alphaMaxarr, *dnarr;
+	  PetscScalar   *farr, *alphaMaxarr, *dnarr, * alphaMaxInitialarr;
 	  PetscInt      offsetfrom,offsetto;
 	  DMNetworkComponentGenericDataType *arr;
 
@@ -1393,6 +1459,8 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 	  VecGetArray(alphaMax,&alphaMaxarr);
 
+	  VecGetArray(alphaMaxInitial, &alphaMaxInitialarr);
+
 
 	  unsigned int k = 0;
 	  for (; first_element != last_element; ++first_element) {
@@ -1432,7 +1500,8 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 		  // Set initial design value, first, we need to know which variable group it belongs to
 		  DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
 		  elementData = (EDGEDATA)(arr + offsetd_eStart);
-		  this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+		  this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 		  // Set the value of alphaMax
 
@@ -1495,6 +1564,8 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 	  VecRestoreArray(alphaMax,&alphaMaxarr);
 
+	  VecRestoreArray(alphaMaxInitial, &alphaMaxInitialarr);
+
 
 
 	  ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
@@ -1529,6 +1600,7 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 PetscErrorCode System::RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & DF, PetscInt Design_Index, Vec & alphaMax){
 	  PetscErrorCode ierr;
+	  PetscScalar * alphaMaxInitialarr;
 
 	  assert(_is_partial_derivatives_calculated && "Need to calculate the derivatives first");
 
@@ -1549,16 +1621,29 @@ PetscErrorCode System::RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & 
 
 
 	  // Change parameter data, first, keep original value
-	  original_design = alphaMaxInit[Design_Index];
+	  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 
-	  alphaMaxInit[Design_Index] += dt;
+	  original_design = alphaMaxInitialarr[Design_Index];
+
+
+
+	  alphaMaxInitialarr[Design_Index] += dt;
+
+	  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
+
 
 	  // Evaluate function
 	  FormRHSFunction(ts,t,U,Residual_partialP_FD,this);
 
 	  // Change the parameter again, now backwards
-	  alphaMaxInit[Design_Index] -= 2.0*dt;
+
+	  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+
+
+	  alphaMaxInitialarr[Design_Index] -= 2.0*dt;
+
+	  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 
 	  // Evaluate function
@@ -1570,7 +1655,14 @@ PetscErrorCode System::RHSParameterDerivatives_FD(PetscReal & t, Vec & U, Vec & 
 	  VecScale(Residual_partialP_FD,alpha);
 
 	  // Recover density value
-	  alphaMaxInit[Design_Index]= original_design;
+
+	  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+
+
+	  alphaMaxInitialarr[Design_Index] = original_design;
+
+	  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
+
 
 
 	  std::cout<<"/*-----------Comparing residual derivatives -------------*/"<<std::endl;
@@ -1606,6 +1698,7 @@ PetscErrorCode System::AdjointSolve(){
 	const PetscScalar *uarr;
 	PetscScalar  * omegaarr, * tmparr, * tmpalphamaxarr, * gammaPrevarr, * lambdaarr, *muarr;
 	const PetscScalar *alphaMaxarr;
+	PetscScalar * alphaMaxInitialarr;
 	PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
 
 	/*
@@ -1705,6 +1798,8 @@ PetscErrorCode System::AdjointSolve(){
 
 	unsigned int pasos = 0;
 
+	VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+
 	//TimeStepEnd--;
 
 	for(; TimeStep!=TimeStepEnd;++TimeStep, ++Implicit_Variable,++CurrentTime,++alphaMaxVec, ++Implicit_Variable_previous,
@@ -1731,6 +1826,8 @@ PetscErrorCode System::AdjointSolve(){
 		 * Get alphaMax info
 		 */
 		VecGetArrayRead(*alphaMaxVec,&alphaMaxarr);
+
+
 
 
 		  if (problemData.finiteDifference){
@@ -1807,6 +1904,8 @@ PetscErrorCode System::AdjointSolve(){
 			VecSet(Phi[i],0.0);
 			VecSet(W_i[i],0.0);
 		}
+
+
 
 
 		for (int i = Stages - 2; i>=0; i--){
@@ -1964,6 +2063,9 @@ PetscErrorCode System::AdjointSolve(){
 			// Index for alphaMaxarr
 			k = 0;
 
+
+
+
 			for (e = eStart; e< eEnd; e++ ){
 			    PetscInt    offsetd,key;
 
@@ -1997,7 +2099,8 @@ PetscErrorCode System::AdjointSolve(){
 				// Set initial design value, first, we need to know which variable group it belongs to
 				DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
 				elementData = (EDGEDATA)(arr + offsetd_eStart);
-				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+				this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 				// Set the value of alphaMax. We need to do this to update
 				this->elementFunction.set_alphaMax(alphaMaxarr[k]);
@@ -2148,6 +2251,7 @@ PetscErrorCode System::AdjointSolve(){
 		ierr =  VecRestoreArrayRead(*alphaMaxVec,&alphaMaxarr);CHKERRQ(ierr);
 
 
+
 #ifdef DEBUG
 		std::cout<<"Gamma before alpha"<<std::endl;
 		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
@@ -2208,7 +2312,8 @@ PetscErrorCode System::AdjointSolve(){
 			// Set initial design value, first, we need to know which variable group it belongs to
 			DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
 			elementData = (EDGEDATA)(arr + offsetd_eStart);
-			this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+			this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 			// Set the value of alphaMax. We need to do this to update
 			this->elementFunction.set_alphaMax(alphaMaxarr[k]);
@@ -2356,7 +2461,8 @@ PetscErrorCode System::AdjointSolve(){
 				// Set initial design value, first, we need to know which variable group it belongs to
 				DMNetworkGetComponentTypeOffset(networkdm,e,0,&key,&offsetd_eStart);
 				elementData = (EDGEDATA)(arr + offsetd_eStart);
-				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+				this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 				// Set the value of alphaMax. We need to do this to update
 				this->elementFunction.set_alphaMax(alphaMaxarr[k]);
@@ -2439,6 +2545,8 @@ PetscErrorCode System::AdjointSolve(){
 
 	}
 
+	ierr =  VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
+
 
 
 
@@ -2511,7 +2619,7 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 
 	  PetscInt      eStart,eEnd,vfrom,vto;
 	  const PetscScalar *uarr;
-	  PetscScalar alphaMaxarr[1];
+	  PetscScalar alphaMaxarr[1], *alphaMaxInitialarr;
 	  PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
 	  PetscInt      offsetfrom,offsetto;
 	  DMNetworkComponentGenericDataType *arr;
@@ -2552,6 +2660,8 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
 	  PetscInt key, offsetd_eStart;
+
+	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 	for (; target != end; ++target){
 		// Only perform calculations if the element is within this processor
@@ -2620,7 +2730,8 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 					// Set initial design value, first, we need to know which variable group it belongs to
 					DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
 					elementData = (EDGEDATA)(arr + offsetd_eStart);
-					this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+					this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 
 					this->elementFunction.set_alphaMax(*alphaMaxarr);
@@ -2642,6 +2753,9 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 
 	// Gather values for the objective functions
 	MPI_Allreduce(&LocalFunctionValue, &FunctionValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
+
+
+	  VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 //	std::cout<<"FunctionValue = "<<FunctionValue<<std::endl;
 
@@ -2879,7 +2993,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	PetscInt      eStart,eEnd,vfrom,vto;
 	const PetscScalar *uarr;
 	PetscScalar   *partialF_partialU_arr;
-	PetscScalar alphaMaxarr[1];
+	PetscScalar alphaMaxarr[1], * alphaMaxInitialarr;
 	PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
 	PetscInt      offsetfrom,offsetto;
 	DMNetworkComponentGenericDataType *arr;
@@ -2939,6 +3053,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	  PetscInt key, offsetd_eStart;
 
 
+	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 
 
@@ -2994,7 +3109,8 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 				// Set initial design value, first, we need to know which variable group it belongs to
 				DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
 				elementData = (EDGEDATA)(arr + offsetd_eStart);
-				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+				this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 
 				this->elementFunction.set_alphaMax(*alphaMaxarr);
@@ -3076,6 +3192,8 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
 
+	ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);CHKERRQ(ierr);
+
 	ierr = VecRestoreArray(localdFdU,&partialF_partialU_arr);
 	ierr = DMLocalToGlobalBegin(networkdm,localdFdU,ADD_VALUES,dFdU_partial);CHKERRQ(ierr);
 	ierr = DMLocalToGlobalEnd(networkdm,localdFdU,ADD_VALUES,dFdU_partial);CHKERRQ(ierr);
@@ -3102,7 +3220,7 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 	PetscInt      eStart,eEnd,vfrom,vto;
 	const PetscScalar *uarr;
-	PetscScalar alphaMaxarr[1];
+	PetscScalar alphaMaxarr[1], *alphaMaxInitialarr;
 	PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
 	PetscInt      offsetfrom,offsetto;
 	DMNetworkComponentGenericDataType *arr;
@@ -3149,6 +3267,8 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
 	  PetscInt key, offsetd_eStart;
+
+	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 	for (; target != end; ++target){
 		// Only perform calculations if the element is within this processor
@@ -3200,7 +3320,8 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 				// Set initial design value, first, we need to know which variable group it belongs to
 				DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
 				elementData = (EDGEDATA)(arr + offsetd_eStart);
-				this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+				this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
 
 				this->elementFunction.set_alphaMax(*alphaMaxarr);
 				this->elementFunction.calculate_delta();
@@ -3224,6 +3345,8 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 	}
 	VecAssemblyBegin(dFdP_partial);
 	VecAssemblyEnd(dFdP_partial);
+
+	  VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
 	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
@@ -3369,7 +3492,7 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 
 		  PetscInt      eStart,eEnd,vfrom,vto;
 		  const PetscScalar *uarr;
-		  PetscScalar alphaMaxarr[1];
+		  PetscScalar alphaMaxarr[1], *alphaMaxInitialarr;
 		  PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
 		  PetscInt      offsetfrom,offsetto;
 		  DMNetworkComponentGenericDataType *arr;
@@ -3400,6 +3523,8 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 		ierr = DMGlobalToLocalEnd(networkdm,U,INSERT_VALUES,localU);CHKERRQ(ierr);
 		// Copy local vector to an array
 		ierr = VecGetArrayRead(localU,&uarr);CHKERRQ(ierr);
+
+		ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 		VecAssemblyBegin(alphaMax);
 		VecAssemblyEnd(alphaMax);
@@ -3484,7 +3609,9 @@ PetscErrorCode System::PrintForcesTargetArea(Vec & U, Vec & alphaMax, PetscInt &
 							// Set initial design value, first, we need to know which variable group it belongs to
 							DMNetworkGetComponentTypeOffset(networkdm,elementIndex,0,&key,&offsetd_eStart);
 							elementData = (EDGEDATA)(arr + offsetd_eStart);
-							this->elementFunction.set_alphaP_initial(alphaMaxInit[elementData->VariableGroup]);
+
+							this->elementFunction.set_alphaP_initial(alphaMaxInitialarr[elementData->VariableGroup]);
+
 
 							this->elementFunction.set_alphaMax(*alphaMaxarr);
 							this->elementFunction.calculate_delta();
@@ -3557,7 +3684,7 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  // Vector for the FD partial derivatives for this time step
 	  Vec partialF_partialP_FD;
 	  VecDuplicate(dFdP,&partialF_partialP_FD);
-	  PetscScalar * dFdp_FD_arr;
+	  PetscScalar * dFdp_FD_arr, *alphaMaxInitialarr;
 
 	  // Zero the partialF_partialU_FD, we recycle it on each iteration
 	  VecSet(partialF_partialP_FD,0.0);
@@ -3569,6 +3696,11 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  // We need to loop over the local vertices
 	  PetscInt vStart, vEnd;
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
+
+
+
+
+
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
 
 			  PetscReal FD_partial_deriv = 0.0;
@@ -3576,16 +3708,29 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 
 
 			  // Change parameter data, first, keep original value
-			  original_design = alphaMaxInit[i];
+			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
-			  alphaMaxInit[i] += dt;
+
+
+			  original_design = alphaMaxInitialarr[i];
+
+
+
+			  alphaMaxInitialarr[i] += dt;
+
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 			  // Evaluate function
 			  ObjFunctionTime(U,alphaMax,NumObjFunct);
 			  FD_partial_deriv = FunctionValue;
 
 			  // Change the parameter again, now backwards
-			  alphaMaxInit[i] -= 2.0*dt;
+
+			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+			  alphaMaxInitialarr[i] -= 2.0*dt;
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
+
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 
 			  // Evaluate function
@@ -3596,7 +3741,10 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 			  FD_partial_deriv *= 1.0/(2.0*dt);
 
 			  // Recover density value
-			  alphaMaxInit[i] = original_design;
+
+			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+			  alphaMaxInitialarr[i] = original_design;
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 			  // Insert value
 			  dFdp_FD_arr[i] = FD_partial_deriv;
@@ -3847,6 +3995,7 @@ PetscErrorCode System::RestartSolver()
 
 PetscErrorCode System::FiniteDifference(){
 	  PetscErrorCode ierr;
+	  PetscScalar * alphaMaxInitialarr;
 
 
 #ifdef PETSC_USE_LOG
@@ -3888,9 +4037,17 @@ PetscErrorCode System::FiniteDifference(){
 
 
 			  // Change parameter data, first, keep original value
-			  original_design = alphaMaxInit[i];
+			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
-			  alphaMaxInit[i] += dt;
+
+
+			  original_design = alphaMaxInitialarr[i];
+
+
+
+			  alphaMaxInitialarr[i] += dt;
+
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 			  //Gradient_FD[i] = -1.0*FunctionValueGlobalOriginal;
 			  RestartSolver();
@@ -3907,7 +4064,15 @@ PetscErrorCode System::FiniteDifference(){
 			  Gradient_FD[i] = FunctionValueGlobal;
 
 			  // Change the parameter again, now backwards
-			  alphaMaxInit[i] -= 2.0*dt;
+
+
+			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+
+
+
+			  alphaMaxInitialarr[i] -= 2.0*dt;
+
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 			  RestartSolver();
 			  /*
@@ -3926,7 +4091,14 @@ PetscErrorCode System::FiniteDifference(){
 			  Gradient_FD[i] *= 1.0/(2.0*dt);
 
 			  // Recover density value
-			  alphaMaxInit[i] = original_design;
+
+
+			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
+
+
+			  alphaMaxInitialarr[i] = original_design;
+
+			  ierr = VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 			  if (rank == 0)
 				  std::cout<<std::setprecision(10)<<" dFdP_FD["<<i<<"] = "<<Gradient_FD[i]<<std::endl;
@@ -4041,10 +4213,6 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 				}
 				continue;
 			}
-			else if (keyword == "#Weight")  {
-				finp >> designData.penalty_weight;
-				continue;
-			}
 			else if (keyword == "#Norm")  {
 				finp >> designData.SpaceNorm;
 				designData.TimeNorm = designData.SpaceNorm;
@@ -4065,16 +4233,16 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 				}
 				continue;
 			}
-			else if (keyword == "#vfmin")  {
-				finp >> designData.volfrac_min;
-				continue;
-			}
-			else if (keyword == "#simp")  {
-				finp >> designData.SIMP_parameter;
-				continue;
-			}
 			else if (keyword == "#kkttol")  {
 				finp >> designData.KKT_tol;
+				continue;
+			}
+			else if (keyword == "#xmin")  {
+				finp >> designData.xmin;
+				continue;
+			}
+			else if (keyword == "#xmax")  {
+				finp >> designData.xmax;
 				continue;
 			}
 			else if (keyword == "#costtol")  {
@@ -4382,7 +4550,8 @@ PetscErrorCode System::InitialDesignSolution(){
 	DMNetworkComponentGenericDataType * arr;
 	ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
 
-
+	PetscScalar * alphaMaxInitialarr;
+	VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
 	for (unsigned int i = 0; i < problemData.N_Elements; i++){
 
@@ -4390,11 +4559,13 @@ PetscErrorCode System::InitialDesignSolution(){
 		DMNetworkGetComponentTypeOffset(networkdm,i,0,&key,&offsetd_eStart);
 		elementData = (EDGEDATA)(arr + offsetd_eStart);
 
-		alphaMaxarr[i] = alphaMaxInit[elementData->VariableGroup];
-
+		alphaMaxarr[i] = alphaMaxInitialarr[elementData->VariableGroup];
 	}
 
 	VecRestoreArray(alphaMax, &alphaMaxarr);
+
+	VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
+
 
 
 }
