@@ -1604,7 +1604,7 @@ PetscErrorCode System::AdjointSolve(){
 
 	Vec           localU, localOmega, localLambda;
 	const PetscScalar *uarr;
-	PetscScalar  * omegaarr, * tmparr, * tmpalphamaxarr, * gammaPrevarr, * lambdaarr;
+	PetscScalar  * omegaarr, * tmparr, * tmpalphamaxarr, * gammaPrevarr, * lambdaarr, *muarr;
 	const PetscScalar *alphaMaxarr;
 	PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
 
@@ -1906,10 +1906,7 @@ PetscErrorCode System::AdjointSolve(){
 			VecAssemblyBegin(V_i[i]);
 			VecAssemblyEnd(V_i[i]);
 
-#ifdef DEBUG
-//			std::cout<<"V[i]"<<std::endl;
-//			VecView(V_i[i],PETSC_VIEWER_STDOUT_WORLD);
-#endif
+
 
 			VecSet(TMP,0.0);
 			VecSet(TMPalpha,0.0);
@@ -2034,13 +2031,13 @@ PetscErrorCode System::AdjointSolve(){
 				this->elementFunction.jacobian_alphaMax_vector_product(omega_local_U,result);
 
 #ifdef DEBUG
-//				std::cout<<"result for tmpalpha element "<<k<<" = "<<result<<std::endl;
+				std::cout<<"result for tmpalpha element "<<k<<" = "<<result<<std::endl;
 #endif
 
 				tmpalphamaxarr[k] -= result;
 #ifdef DEBUG
-//				std::cout<<"producto del jacobiano"<<std::endl;
-//				phi_local.print();
+				std::cout<<"producto del jacobiano"<<std::endl;
+				phi_local.print();
 #endif
 				/*
 				 * U variables
@@ -2082,18 +2079,20 @@ PetscErrorCode System::AdjointSolve(){
 			 */
 
 
+
+
+
 			ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
-			ierr = VecRestoreArray(localOmega,&omegaarr);CHKERRQ(ierr);
-			ierr = VecRestoreArray(localTMP,&tmparr);CHKERRQ(ierr);
-
-
 			ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
 
 //			ierr = DMLocalToGlobalBegin(networkdm,localOmega,INSERT_VALUES,Omega);CHKERRQ(ierr);
 //			ierr = DMLocalToGlobalEnd(networkdm,localOmega,INSERT_VALUES,Omega);CHKERRQ(ierr);
+			ierr = VecRestoreArray(localOmega,&omegaarr);CHKERRQ(ierr);
 			ierr = DMRestoreLocalVector(networkdm,&localOmega);CHKERRQ(ierr);
 
+
+			ierr = VecRestoreArray(localTMP,&tmparr);CHKERRQ(ierr);
 			ierr = DMLocalToGlobalBegin(networkdm,localTMP,ADD_VALUES,TMP);CHKERRQ(ierr);
 			ierr = DMLocalToGlobalEnd(networkdm,localTMP,ADD_VALUES,TMP);CHKERRQ(ierr);
 			ierr = DMRestoreLocalVector(networkdm,&localTMP);CHKERRQ(ierr);
@@ -2124,6 +2123,18 @@ PetscErrorCode System::AdjointSolve(){
 
 //			std::cout<<"W_i["<<i<<"]"<<std::endl;
 //			VecView(W_i[i],PETSC_VIEWER_STDOUT_WORLD);
+
+
+#ifdef DEBUG
+			std::cout<<"V[i]"<<std::endl;
+			VecView(V_i[i],PETSC_VIEWER_STDOUT_WORLD);
+
+			std::cout<<"Phi[i]"<<std::endl;
+			VecView(Phi[i],PETSC_VIEWER_STDOUT_WORLD);
+
+			std::cout<<"Omega[i]"<<std::endl;
+			VecView(Omega,PETSC_VIEWER_STDOUT_WORLD);
+#endif
 		}
 
 #ifdef DEBUG
@@ -2146,16 +2157,18 @@ PetscErrorCode System::AdjointSolve(){
 		 * Now we need to calculate dHdalphaMax
 		 */
 
-		ierr = DMGetLocalVector(networkdm,&localLambda);CHKERRQ(ierr);
-		ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
+		ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
 		ierr = DMGlobalToLocalBegin(networkdm,*Implicit_Variable_post,INSERT_VALUES,localU);CHKERRQ(ierr);
 		ierr = DMGlobalToLocalEnd(networkdm,*Implicit_Variable_post,INSERT_VALUES,localU);CHKERRQ(ierr);
-
 		ierr = VecGetArrayRead(localU,&uarr);
+
+
 		ierr = VecGetArray(Gamma,&gammaPrevarr);
 
 		ierr =  VecGetArrayRead(*alphaMaxVec,&alphaMaxarr);CHKERRQ(ierr);
+
+		ierr = VecGetArray(Mu,&muarr);
 
 		// Index for alphaMaxarr
 		k = 0;
@@ -2206,11 +2219,21 @@ PetscErrorCode System::AdjointSolve(){
 			std::cout<<"alphaMax en dHdalphaMax = "<<alphaMaxarr[k]<<" element = "<<k<<std::endl;
 			std::cout<<"delta_adjoint en dHdalphaMax = "<<this->elementFunction.get_delta()<<" element = "<<k<<std::endl;
 #endif
+
+			this->elementFunction.state_eq_product_parameter(gammaPrevarr[k],result);
+			muarr[k] += result;
+
+
 			this->elementFunction.state_eq_product_alphaMax(gammaPrevarr[k],result);
+
+
+
 #ifdef DEBUG
-//			std::cout<<"result for gamma = "<<result<<std::endl;
+			std::cout<<"result for gamma = "<<result<<std::endl;
 #endif
 			gammaPrevarr[k] = result;
+
+
 
 
 			// Update element counter
@@ -2218,15 +2241,22 @@ PetscErrorCode System::AdjointSolve(){
 		}
 
 		ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
+		ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
+
 		ierr = VecRestoreArray(Gamma,&gammaPrevarr);CHKERRQ(ierr);
+
+		ierr = VecRestoreArray(Mu,&muarr);
+
+
+
+
 
 #ifdef DEBUG
 		std::cout<<"Gamma after alpha"<<std::endl;
 		VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
-		ierr = DMRestoreLocalVector(networkdm,&localLambda);CHKERRQ(ierr);
-		ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
+
 
 		ierr =  VecRestoreArrayRead(*alphaMaxVec,&alphaMaxarr);CHKERRQ(ierr);
 
@@ -2243,6 +2273,9 @@ PetscErrorCode System::AdjointSolve(){
 #ifdef DEBUG
 		std::cout<<"Mu"<<std::endl;
 		VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
+
+		std::cout<<"Lambda antes de gamma"<<std::endl;
+		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
 #endif
 
 //		std::cout<<"GammaPrev"<<std::endl;
@@ -2253,8 +2286,7 @@ PetscErrorCode System::AdjointSolve(){
 
 
 //
-//		std::cout<<"Lambda antes de gamma"<<std::endl;
-//		VecView(Lambda,PETSC_VIEWER_STDOUT_WORLD);
+
 
 		/*
 		 * Add the sum to Lambda
@@ -2272,18 +2304,17 @@ PetscErrorCode System::AdjointSolve(){
 		if (alphaMaxVec_previous != alphaMaxVec_end) {
 
 			ierr = DMGetLocalVector(networkdm,&localLambda);CHKERRQ(ierr);
-			ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
-
 			ierr = DMGlobalToLocalBegin(networkdm,Lambda,INSERT_VALUES,localLambda);CHKERRQ(ierr);
 			ierr = DMGlobalToLocalEnd(networkdm,Lambda,INSERT_VALUES,localLambda);CHKERRQ(ierr);
+			ierr = VecGetArray(localLambda,&lambdaarr);
 
+			ierr = DMGetLocalVector(networkdm,&localU);CHKERRQ(ierr);
 			ierr = DMGlobalToLocalBegin(networkdm,*Implicit_Variable,INSERT_VALUES,localU);CHKERRQ(ierr);
 			ierr = DMGlobalToLocalEnd(networkdm,*Implicit_Variable,INSERT_VALUES,localU);CHKERRQ(ierr);
-
-			ierr = VecGetArray(localLambda,&lambdaarr);
 			ierr = VecGetArrayRead(localU,&uarr);
-			ierr = VecGetArray(Gamma,&gammaPrevarr);
 
+
+			ierr = VecGetArray(Gamma,&gammaPrevarr);
 			ierr =  VecGetArrayRead(*alphaMaxVec_previous,&alphaMaxarr);CHKERRQ(ierr);
 
 			// Index for alphaMaxarr
@@ -2347,11 +2378,11 @@ PetscErrorCode System::AdjointSolve(){
 				lambdaarr[offsetto + 3] 	+= phi_local(3);
 
 #ifdef DEBUG
-//				std::cout<<"phi_local"<<std::endl;
-//				phi_local.print();
-//
-//				if (phi_local(0) != 0)
-//					std::cout<<"Transition reached element = "<<k<<std::endl;
+				std::cout<<"phi_local"<<std::endl;
+				phi_local.print();
+
+				if (phi_local(0) != 0)
+					std::cout<<"Transition reached element = "<<k<<std::endl;
 #endif
 
 
@@ -2378,20 +2409,23 @@ PetscErrorCode System::AdjointSolve(){
 				k++;
 			}
 
-			ierr = VecRestoreArray(localLambda,&lambdaarr);CHKERRQ(ierr);
-			ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
-			ierr = VecRestoreArray(Gamma,&gammaPrevarr);CHKERRQ(ierr);
+
+
+
 
 //			ierr = DMLocalToGlobalBegin(networkdm,Lambda,ADD_VALUES,localLambda);CHKERRQ(ierr);
 //			ierr = DMLocalToGlobalEnd(networkdm,Lambda,ADD_VALUES,localLambda);CHKERRQ(ierr);
-
+			ierr = VecRestoreArray(localLambda,&lambdaarr);CHKERRQ(ierr);
 			ierr = DMLocalToGlobalBegin(networkdm,localLambda,INSERT_VALUES,Lambda);CHKERRQ(ierr);
 			ierr = DMLocalToGlobalEnd(networkdm,localLambda,INSERT_VALUES,Lambda);CHKERRQ(ierr);
-
 			ierr = DMRestoreLocalVector(networkdm,&localLambda);CHKERRQ(ierr);
+
+			ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
 			ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
 
 			ierr =  VecRestoreArrayRead(*alphaMaxVec_previous,&alphaMaxarr);CHKERRQ(ierr);
+
+			ierr = VecRestoreArray(Gamma,&gammaPrevarr);CHKERRQ(ierr);
 
 		}
 
@@ -2432,9 +2466,6 @@ PetscErrorCode System::ProcessGradient() {
 
 	_is_gradient_calculated = true;
 
-
-	VecView(Mu,PETSC_VIEWER_STDOUT_WORLD);
-	VecView(Gamma,PETSC_VIEWER_STDOUT_WORLD);
 	VecAXPY(Mu,1.0,Gamma);
 
 	return ierr;
@@ -2687,6 +2718,7 @@ PetscErrorCode System::CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax, 
 					U_i_from = uarr[offsetfrom + 2];
 
 
+
 					// Add contribution for this time step
 					FValueTotalElement += U_i_from;
 
@@ -2696,6 +2728,7 @@ PetscErrorCode System::CalculateObjFunctionTime_Simple(Vec & U, Vec & alphaMax, 
 
 	// Gather values for the objective functions
 	MPI_Allreduce(&LocalFunctionValue, &FunctionValue, 1, MPIU_REAL, MPI_SUM, PETSC_COMM_WORLD);
+
 
 	ierr = VecRestoreArrayRead(localU,&uarr);CHKERRQ(ierr);
 	ierr = DMRestoreLocalVector(networkdm,&localU);CHKERRQ(ierr);
@@ -2745,7 +2778,7 @@ PetscErrorCode System::ProcessObjFunctionTime(){
 
 	}
 	else
-		FunctionValueGlobal = FunctionValueFinalStep;
+		FunctionObjetivoPartial[0] = CapitalOmega[0];
 
 	if (rank == 0)
 		//std::cout<<"FunctionValue = "<<FunctionValueGlobal<<std::endl;

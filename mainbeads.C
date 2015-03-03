@@ -52,6 +52,8 @@ int main(int argc,char ** argv)
 		 */
 		ierr = QuadBeadsDummy.SetUpSolver();
 
+		QuadBeadsDummy.ProcessOptimalSolution();
+
 
 		/*
 		 * Solve

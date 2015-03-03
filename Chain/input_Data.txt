@@ -3,10 +3,10 @@
 ###############################
 ## Total transient analysis time
 #totaltime
-100
+200
 ## Time step for implicit scheme
 #timestep
-0.2
+0.1
 ###############################
 ##  GENERAL PARAMETERS       ##
 ###############################
@@ -37,7 +37,7 @@
 ## 2 = energy
 ## 3 = normalized energy (wrt input energy)
 #Objective
-1	1
+0	1
 1	1
 ## Objective function penalty weight
 ## 0 = no penalty added to cost function

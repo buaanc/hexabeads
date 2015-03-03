@@ -48,10 +48,13 @@ ConstitutiveLaw::ConstitutiveLaw(){
 	 _partial_derivative_alphaMax = NULL;
 	 _state_eq_partial_derivative_U = NULL;
 	 _state_eq_partial_derivative_alphaMax = NULL;
+	 _state_eq_partial_derivative_parameter = NULL;
 	 _partial_derivative_P_alphaP_Initial = NULL;
 
 
+
 	 dh_dalphaMax = 0.0;
+	 dh_dP = 0.0;
 	 dh_dU = arma::zeros<arma::colvec>(4);
 
 	 residual_derivative_alphaMax_vec = arma::zeros<arma::colvec>(4);
@@ -144,6 +147,7 @@ ConstitutiveLaw::ConstitutiveLaw(ProblemParameters * problemdata, DesignParamete
 	 _partial_derivative_alphaMax = NULL;
 	 _state_eq_partial_derivative_U = NULL;
 	 _state_eq_partial_derivative_alphaMax = NULL;
+	 _state_eq_partial_derivative_parameter = NULL;
 	 _partial_derivative_P_alphaP_Initial = NULL;
 
 	 _calculate_delta = NULL;
@@ -151,6 +155,7 @@ ConstitutiveLaw::ConstitutiveLaw(ProblemParameters * problemdata, DesignParamete
 	 residual_derivative_alphaMax_vec = arma::zeros<arma::colvec>(4);
 
 	 dh_dalphaMax = 0.0;
+	 dh_dP = 0.0;
 	 dh_dU = arma::zeros<arma::colvec>(4);
 
 	 _bead_to = NULL;
@@ -225,6 +230,8 @@ void ConstitutiveLaw::reset_beads(BeadsData & bead_from, BeadsData & bead_to, Pe
 
 		_state_eq_partial_derivative_U = &ConstitutiveLaw::state_eq_partial_derivative_U_dummy_plastic;
 
+		_state_eq_partial_derivative_parameter = &ConstitutiveLaw::state_eq_partial_derivative_parameter_dummy;
+
 		_partial_derivative_P_alphaP_Initial = &ConstitutiveLaw::_partial_derivative_P_alphaP_Initial_dummy_plastic;
 	}
 	else if (analysis == 2){
@@ -239,6 +246,8 @@ void ConstitutiveLaw::reset_beads(BeadsData & bead_from, BeadsData & bead_to, Pe
 		_state_eq_partial_derivative_alphaMax = &ConstitutiveLaw::state_eq_partial_derivative_alphaMax_plastic;
 
 		_state_eq_partial_derivative_U = &ConstitutiveLaw::state_eq_partial_derivative_U_plastic;
+
+		_state_eq_partial_derivative_parameter = &ConstitutiveLaw::state_eq_partial_derivative_parameter_plastic;
 
 		_partial_derivative_P_alphaP_Initial = &ConstitutiveLaw::_partial_derivative_P_alphaP_Initial_plastic;
 	}
@@ -361,6 +370,7 @@ void ConstitutiveLaw::_partial_derivative_P_alphaP_Initial_plastic(PetscScalar &
 		_alphaP_Initial = 0;
 
 	_derivative_alphaP_Initial = c1 - c4*c3*exp(-c4*(alphaMax_Initial/_alphaY-1.0));
+
 }
 
 void ConstitutiveLaw::_partial_derivative_P_alphaP_Initial_dummy_plastic(PetscScalar & alphaMax_Initial) {
@@ -996,6 +1006,8 @@ void ConstitutiveLaw::state_eq_partial_derivative_alphaMax_plastic(){
 
 	assert(_is_alphaMax);
 
+
+
 		PetscScalar pAlpha, Anorm;
 		PetscScalar alphaNorm = _alphaMax/_alphaY;
 
@@ -1207,6 +1219,127 @@ void ConstitutiveLaw::state_eq_partial_derivative_U_plastic(){
 }
 
 
+void ConstitutiveLaw::state_eq_partial_derivative_parameter_plastic(){
+
+	assert(_is_alphaMax);
+
+	/* We need to have calculated _alphaP_Initial*/
+	assert(_is_alphaP_initial_calculated);
+
+		PetscScalar pAlpha, Anorm;
+		PetscScalar alphaNorm = _alphaMax/_alphaY;
+
+		PetscScalar FMaxElastic, Felastic, FPlastic;
+
+		// _alphaMax refers to the level reached in the previous timestep
+		// if we are still in the elastic regime, alphaMax = 0
+		_alphaP = c1*_alphaMax - c2*_alphaY + c3*_alphaY*exp(-c4*(alphaNorm-1.0));
+		if (_alphaP < 0.0)
+			_alphaP = 0.0;
+
+		if (_delta >= _alphaP)
+		{
+			if (_delta <= _alphaY && _alphaP == 0.0)
+			{
+				dh_dP = 0;
+			}
+			else
+			{
+				if (_alphaP == 0)
+				{
+					dh_dP = _derivative_alphaP_Initial;
+				}
+				else{
+					//Elastic force
+					alphaNorm = _alphaMax/_alphaY;
+					// We update alphaP because it changes when we change alphaY
+					_alphaP = c1*_alphaMax - c2*_alphaY + c3*_alphaY*exp(-c4*(alphaNorm-1.0));
+					if (_alphaP<0.0)
+						_alphaP = 0.0;
+
+
+					pAlpha = _problemdata->sigmayielding*_AreaY*(d1 - d2*exp(-d3*(alphaNorm-1.0)));
+					if (alphaNorm<g1)
+						Anorm = pow(alphaNorm,e1);
+					else
+						Anorm = (f1*alphaNorm - f2);
+					FMaxElastic = pAlpha*Anorm;
+					Felastic = FMaxElastic*pow(((_delta - _alphaP)/(_alphaMax - _alphaP)),h1);
+
+					//Plastic force
+					alphaNorm = _delta/_alphaY;
+					_alphaP = c1*_delta - c2*_alphaY + c3*_alphaY*exp(-c4*(alphaNorm-1.0));
+					if (_alphaP<0.0)
+						_alphaP = 0.0;
+
+					pAlpha = _problemdata->sigmayielding*_AreaY*(d1 - d2*exp(-d3*(alphaNorm-1.0)));
+					if (alphaNorm<g1)
+					{
+						Anorm = pow(alphaNorm,e1);
+					}
+					else
+					{
+						Anorm = (f1*alphaNorm - f2);
+					}
+					FPlastic = pAlpha*Anorm;
+
+					//Yield criteria
+					if (Felastic < FPlastic - tol)
+					{
+						dh_dP = 0;
+					}
+					else
+					{
+						dh_dP = _derivative_alphaP_Initial;
+					}
+				}
+			}
+		}
+		else{
+			dh_dP = 0;
+		}
+
+}
+
+void ConstitutiveLaw::state_eq_partial_derivative_parameter_dummy(){
+	// Need to check that the material properties and delta have been calculated
+		assert(_is_delta_calculated);
+		assert(_is_matprop_calculated);
+
+		/* We need to have calculated _alphaP_Initial*/
+		assert(_is_alphaP_initial_calculated);
+
+		// Negative deltas produce negative forces --> compression
+		// Positive deltas produce no forces --> tension
+
+		k1 = (_bead_from->density_design + _bead_to->density_design)/2.0;
+
+		_alphaP = _alphaMax*(k2 - k1)/ k2;
+
+
+		PetscReal Felastic, FPlastic;
+
+
+		Felastic = k2*(_delta - _alphaP);
+
+		FPlastic = k1*_delta;
+
+
+		if (_delta >= _alphaP){
+			if (Felastic < FPlastic - tol){
+				dh_dP = 0.0;
+
+			}
+			else {
+				dh_dP = _derivative_alphaP_Initial;
+			}
+		}
+		else{
+			dh_dP = 0.0;
+		}
+
+
+}
 
 void ConstitutiveLaw::state_eq_partial_derivative_U_dummy_plastic(){
 	// Need to check that the material properties and delta have been calculated
@@ -1274,6 +1407,12 @@ void ConstitutiveLaw::state_eq_vector_product_U(const PetscScalar & gamma, arma:
 
 }
 
+void ConstitutiveLaw::state_eq_product_parameter(const PetscScalar & input, PetscScalar & result){
+
+	// This is the way to call a function pointer
+	(*this.*_state_eq_partial_derivative_parameter)();
+	result = dh_dP*input;
+}
 
 /* ---------------------------------------------------
  *

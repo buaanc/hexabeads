@@ -11,24 +11,24 @@
 -pc_type bjacobi
 -sub_pc_type lu
 -sub_pc_factor_mat_ordering_type qmd
--analysis 1
+-analysis 2
 -snes_monitor 
 -ksp_monitor_true_residual 
 -snes_converged_reason 
 -ksp_converged_reason
--size_data chain
+-size_data hex
 -dynamic 1
--reltol 1e-7
--abstol 1e-7
+-reltol 1e-6
+-abstol 1e-6
 #-ts_adapt_type none
--large_deformations 1
+-large_deformations 0
 -objfunction 1
 -loading 1
 -matlabhistory 0
 -alphaMaxInit 0.0
 -sensitivities 1
--initial_design 0.5
--printdisplacements 0
+-initial_design 1.5
+-printdisplacements 1
 -ts_type rk
 #-ts_type euler
 -ts_rk_type 5dp

@@ -122,6 +122,9 @@ class ConstitutiveLaw
 
 		void state_eq_vector_product_U(const PetscReal & gamma, arma::colvec & result);
 
+		void state_eq_product_parameter(const PetscReal & gamma, PetscScalar & result);
+
+
 		void jacobian_alphaMax_vector_product(arma::colvec & vector, PetscScalar & result);
 
 		void check_jacobian();
@@ -284,21 +287,24 @@ class ConstitutiveLaw
 
 		void (ConstitutiveLaw::*_state_eq_partial_derivative_U) ();
 
-		void state_eq_partial_derivative_alphaMax_plastic();
+		void (ConstitutiveLaw::*_state_eq_partial_derivative_parameter) ();
 
-		void state_eq_partial_derivative_alphaMax_linear();
+		void state_eq_partial_derivative_alphaMax_plastic();
 
 		void state_eq_partial_derivative_alphaMax_dummy_plastic();
 
 		void state_eq_partial_derivative_U_plastic();
 
-		void state_eq_partial_derivative_U_linear();
 
 		void state_eq_partial_derivative_U_dummy_plastic();
 
+		void state_eq_partial_derivative_parameter_dummy();
+
+		void state_eq_partial_derivative_parameter_plastic();
 
 
-		PetscReal dh_dalphaMax;
+
+		PetscReal dh_dalphaMax, dh_dP;
 		arma::colvec dh_dU;
 
 

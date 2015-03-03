@@ -3,53 +3,41 @@ function dummy
 global tol;
 
 tol = 1e-10;
-n_elem = 2;
-initial_design = 0.5;
-
-design_beads = [1:n_elem+1];
-design_array = zeros(1,n_elem+1);
+n_elem = 1;
+initial_design = 1.5;
 
 fd = 1;
 
-for l=1:n_elem+1
-    
-    if any(l == design_beads)
-        design_array(l) = 1;
-    end
-    
-end
+alphaMax_initial = initial_design*ones(n_elem,1);
 
-design_array = design_array == 1;
-
-k1 = zeros(n_elem,1);
-
-densities = ones(1,n_elem+1);
-densities(design_array) = initial_design;
-  
-densities_matrix = [densities(1:end-1); densities(2:end)];
-k1 = mean(densities_matrix,1);
+k1 = 1;
 
 k2 = 4;
-h = 0.2;
+h = 0.1;
 scale_factor = 1;
 
 format long
 
+% 1 for displacement, 2 for alphaMax
+obj_function_number = 1;
 
-t_total = 6.206;
+
+
 %t_total = 4.206;
-t_total = 10;
+t_total = 180;
 [obj_function_1,obj_function_ultimo,y_history,alphaMaxhistory ] ...
-    = primal_problem(k1,k2,t_total,h,scale_factor,n_elem, densities,design_array);
+    = primal_problem(k1,k2,t_total,h,scale_factor,n_elem,alphaMax_initial,obj_function_number);
 
 obj_function_1
 obj_function_ultimo
 
-[sensitivity_diff,sensitivity_ultimo] = direct_diff(k1,k2,t_total,h,scale_factor,n_elem,densities, design_array,design_beads);
-% % 
-% % 
-[sensitivity_adjoint,sensitivity_ultimo_adjoint] = adjoint_method (k1,k2,t_total,h, y_history, alphaMaxhistory,scale_factor,n_elem,densities,design_array,design_beads);
-% % 
+[sensitivity_diff,sensitivity_ultimo,obj_function_DF] = direct_diff(k1,k2,t_total,h,...
+    scale_factor,n_elem,alphaMax_initial,obj_function_number);
+sensitivity_adjoint = zeros(n_elem,1);
+% % % 
+% % % 
+% [sensitivity_adjoint,sensitivity_ultimo_adjoint] = adjoint_method (k1,k2,t_total,h, y_history, alphaMaxhistory,scale_factor,n_elem,densities,design_array,design_beads);
+% % % 
 % disp('Function analitica')
 % phi = 2 / k1^2 * cos(sqrt(k1) * t_total) + t_total^2 /k1 - 2 / k1^2;
 % disp(ph   i)
@@ -70,43 +58,45 @@ obj_function_ultimo
 %Finite difference
 
 if fd == 1
-    sensitivity_FD = zeros(1,sum(design_array));
-    sensitivity_FD_ultimo = zeros(1,sum(design_array));
+    sensitivity_FD = zeros(1,n_elem);
+    sensitivity_FD_ultimo = zeros(1,n_elem);
     contador = 1;
-    for q = design_beads
+    for q = n_elem
         dt = 1e-7;
-        densities(q)  = densities(q)  + dt;
+        alphaMax_initial(q)  = alphaMax_initial(q)  + dt;
 
-        densities_matrix = [densities(1:end-1); densities(2:end)];
-        k1 = mean(densities_matrix,1);
 
         [obj_function_2,obj_function_ultimo_2,y_history, alphaMaxhistory] ...
-            = primal_problem(k1,k2,t_total,h,scale_factor,n_elem,densities,design_array);
+            = primal_problem(k1,k2,t_total,h,scale_factor,n_elem,alphaMax_initial,obj_function_number);
+       
 
-        densities(q)  = densities(q)  - 2*dt;
+        alphaMax_initial(q)  = alphaMax_initial(q)  - 2*dt;
 
-        densities_matrix = [densities(1:end-1); densities(2:end)];
-        k1 = mean(densities_matrix,1);
+
 
         [obj_function_3, obj_function_ultimo_3, y_history,alphaMaxhistory]...
-            = primal_problem(k1,k2,t_total,h,scale_factor,n_elem,densities,design_array);
+            = primal_problem(k1,k2,t_total,h,scale_factor,n_elem,alphaMax_initial,obj_function_number);
 
+        alphaMax_initial(q)  = alphaMax_initial(q)  + dt;
 
-        densities(q)  = densities(q)  + dt;
-        densities_matrix = [densities(1:end-1); densities(2:end)];
-        k1 = mean(densities_matrix,1);
         sensitivity_FD(contador) = (obj_function_2 - obj_function_3)/(2*dt);
         sensitivity_FD_ultimo(contador) = (obj_function_ultimo_2 - obj_function_ultimo_3)/(2*dt);
         contador = contador + 1;
     end
+    
+    disp('Obj Funct Comparison')
+    disp('FD        Direct Diff')
+    disp([obj_function_1, obj_function_DF] )
 
     disp('Sensitivity Comparison')
     disp('FD               Adjoint                 Direct Diff')
     disp([sensitivity_FD', sensitivity_adjoint, sensitivity_diff] )
 
-%     disp('Sensitivity ultimo Comparison')
-%     disp('FD               Adjoint                 Direct Diff')
-%     disp([sensitivity_FD_ultimo', sensitivity_ultimo_adjoint, sensitivity_ultimo] )
+    sensitivity_ultimo_adjoint = 0;
+    
+    disp('Sensitivity ultimo Comparison')
+    disp('FD               Adjoint                 Direct Diff')
+    disp([sensitivity_FD_ultimo', sensitivity_ultimo_adjoint, sensitivity_ultimo] )
 end
 
 %sensitivity_FD_ultimo = (obj_function_ultimo_2 - obj_function_ultimo_3)/(2*dt)
@@ -115,18 +105,16 @@ end
 
 
 function [obj_function, obj_function_ultimo, y_history, alphaMaxhistory] = ...
-        primal_problem(k1,k2,t_total,h,scale_factor,n_elem,densities,design_array)
+        primal_problem(k1,k2,t_total,h,scale_factor,n_elem,alphaMax_initial,obj_function_number)
     
-    alphaMax = zeros(n_elem,1);
+    alphaMax = alphaMax_initial;
     t = 0;
     obj_function = 0;
 
     
     R = 4.7629999999999999;
     
-    mass_array =  densities*4.0/3.0*pi*R^3*8.5;
-    m = 4.0/3.0*pi*R^3*8.5;
-
+    mass_array = 4.0/3.0*pi*R^3*8.5*ones(n_elem+1,1);
 
     y = zeros(2*n_elem,1);
 
@@ -176,8 +164,10 @@ function [obj_function, obj_function_ultimo, y_history, alphaMaxhistory] = ...
 %                 disp(y_elem)
 %                 disp(alphaMax(j))
 %             end
-            
 
+
+            alphaP_initial = alphaMax_initial(j)*(k2 - k1)/ k2;
+            y_elem = y_elem + alphaP_initial;
             [force, plast,int_force] = RHS(y_elem,alphaMax(j),k1,k2,mass_array,t,j);
 
             if j ~= n_elem
@@ -198,7 +188,11 @@ function [obj_function, obj_function_ultimo, y_history, alphaMaxhistory] = ...
 
 
             if j == n_elem
-                obj_function = obj_function + h*y(dof_elements(2,j))/scale_factor;
+                if (obj_function_number == 1)
+                    obj_function = obj_function + h*y(dof_elements(2,j))/scale_factor;
+                else
+                    obj_function = obj_function + h*alphaMax(j)/scale_factor;
+                end
             end
         end
         y = y + y_asemmbly;
@@ -209,11 +203,13 @@ function [obj_function, obj_function_ultimo, y_history, alphaMaxhistory] = ...
             else
                 y_elem = y(dof_elements(2,j));
             end
-            
+            y_elem = y_elem + alphaP_initial;
             y_elem_array(j) = y_elem;
             
             %Update alphaMax
+
             [force, plast,int_force] = RHS(y_elem,alphaMax(j),k1,k2,mass_array,t,j);
+            y_elem = y_elem - alphaP_initial;
             plast_elem(j) = plast;
             int_force_elem(j) = int_force;
             
@@ -265,13 +261,27 @@ function [obj_function, obj_function_ultimo, y_history, alphaMaxhistory] = ...
         hold all
     end
     
-
+    disp('Last alphaMax')
+    
+    disp(alphaMax)
 %     
 %     figure(2)
 %     plot(t_array,alphaMaxhistory)
     
     
-    obj_function_ultimo = y(2*(n_elem-1));
+
+
+if j == n_elem
+    if (obj_function_number == 1)
+        if n_elem > 1
+            obj_function_ultimo = y(2*(n_elem-1));
+        else
+            obj_function_ultimo = y(2);
+        end
+    else
+        obj_function_ultimo =  alphaMax(j);
+    end
+end
     
     
 %     figure
@@ -284,30 +294,40 @@ end
 
 %Direct differentiation
 
-    function [sensitivity,sensitivity_ultimo] = direct_diff(k1,k2,t_total,h,scale_factor,n_elem , densities, design_array,design_beads)
+    function [sensitivity,sensitivity_ultimo,obj_function] = direct_diff(k1,k2,t_total,h...
+            ,scale_factor,n_elem , alphaMax_initial,obj_function_number)
 
         
+        
+        t = 0;
+        obj_function = 0;
 
-        R = 4.7629999999999999;
+
+    
+
         rho = 8.5;
-        mass_array =  densities*4.0/3.0*pi*R^3*8.5;
-        deriv_mass = 4.0/3.0*pi*R^3*rho;
+
+    
+        R = 4.7629999999999999;
+    
+        mass_array = 4.0/3.0*pi*R^3*8.5*ones(n_elem+1,1);
         
-        n_variables = sum(design_array);
+
+        n_variables = n_elem;
         sensitivity = zeros(n_variables,1);
         sensitivity_ultimo = zeros(n_variables,1);
         
         contador_diff = 1;
-        for variable = design_beads
+        for variable = 1:1:n_elem
         
             t = 0;
-            alphaMax = zeros(n_elem,1);
+            alphaMax = alphaMax_initial;
             obj_function = 0;
             y = zeros(2*n_elem,1);
             Dy = zeros(2*n_elem,1);
             Dq = 0;
             Dp = 1;
-            DalphaMax =  zeros(n_elem,1);
+            DalphaMax =  ones(n_elem,1);
 
             y_elem_array = zeros(n_elem,1);
 
@@ -325,7 +345,6 @@ end
             plast_elem = zeros(n_elem,1);
             for i=0:h:t_total
 
-
                 y_asemmbly = zeros(2*n_elem,1);
                 Dy_asemmbly = zeros(2*n_elem,1);
                 for j=1:n_elem
@@ -342,6 +361,8 @@ end
                         y_elem = y(dof_elements(2,j));
                     end
 
+                    alphaP_initial = alphaMax_initial(j)*(k2 - k1)/ k2;
+                    y_elem = y_elem + alphaP_initial;
                     dFdY = TangentdY(y_elem,alphaMax(j),k1,k2,mass_array,j);
                     dFdY_global = [0 , dFdY(1,1), 0 dFdY(1,2);...
                                    1, 0, 0, 0;...
@@ -349,9 +370,9 @@ end
                                    0, 0, 1, 0];
                     dFdAlphaMax = TangentdAlphaMax(y_elem,alphaMax(j),k1,k2,mass_array,j);
                     dFdAlphaMax_global = [dFdAlphaMax(1); 0; dFdAlphaMax(2); 0];
-                    dFdP = TangentdP(y_elem,alphaMax(j),k1,k2,mass_array,j,n_elem,deriv_mass,design_array,variable,t);
+                    dFdP = TangentdP(y_elem,alphaMax(j),k1,k2,mass_array,j);
                     dFdP_global = [dFdP(1); 0; dFdP(2); 0];
-
+                    
 
         %             disp('Tiempo')
         %             disp(i)
@@ -394,23 +415,30 @@ end
                         Dy_asemmbly(dof_elements(2,j)) = Dy_asemmbly(dof_elements(2,j)) ...
                                         + h*(dFdAlphaMax_global(2)*DalphaMax(j) ...
                                         + dFdP_global(2) * Dp);
-                    end          
+                    end      
                     y_elem_array(j) = y_elem;
 
 
-
                     [force, plast,int_force] = RHS(y_elem,alphaMax(j),k1,k2,mass_array,t,j);
-
+                    y_elem = y_elem - alphaP_initial;
 
                     int_force_elem(j) = int_force;
 
 
                     plast_elem(j) = plast;
+                    
                     if j == n_elem
-                        obj_function = obj_function + h*y(dof_elements(2,j))/scale_factor;
-                        dRdY = ObjdY(y_elem,alphaMax(j),k1,k2,scale_factor );
-                        dRdY_global = [0; dRdY];
-                        Dq = Dq + h* dRdY_global'*Dy(dof_elements(1:2,j));
+                        
+                        if (obj_function_number == 1)
+                            obj_function = obj_function + h*y(dof_elements(2,j))/scale_factor;
+                            dRdY = ObjdY(y_elem,alphaMax(j),k1,k2,scale_factor );
+                            dRdY_global = [0; dRdY];
+                            Dq = Dq + h* dRdY_global'*Dy(dof_elements(1:2,j));
+                        else
+                            obj_function = obj_function + h*alphaMax(j)/scale_factor;
+                            Dq = Dq + h*DalphaMax(j)/scale_factor;
+                        end
+
                     end
 
                 end
@@ -425,11 +453,12 @@ end
                     else
                         y_elem = y(dof_elements(2,j));
                     end
-
+                    y_elem = y_elem + alphaP_initial;
                     y_elem_array(j) = y_elem;
 
                     %Update alphaMax
                     [force, plast,int_force] = RHS(y_elem,alphaMax(j),k1,k2,mass_array,t,j);
+                    y_elem = y_elem - alphaP_initial;
                     plast_elem(j) = plast;
                     int_force_elem(j) = int_force;
 
@@ -452,20 +481,23 @@ end
                         if plast_elem(j) == 1
                             dHdY = 1;
                             dHdalpha = 0;
+                            
+                            dHdP = (k2 - k1)/k2;
                         else
                             dHdY = 0;
-                            dHdalpha = 1;                
+                            dHdalpha = 1; 
+                            dHdP = 0;
                         end
 
-                        DalphaMax(j) = dHdalpha*DalphaMax(j) + dHdY*Dy(dof_elements(2,j));                          
+                        DalphaMax(j) = dHdalpha*DalphaMax(j) + dHdY*Dy(dof_elements(2,j)) + dHdP;                          
                     end
 
                 end
+                
 
                 k = k + 1;
 
                 t = t + h;
-
             end
 
             % Last update
@@ -478,12 +510,26 @@ end
                 force_array(j,k) = int_force_elem(j);
             end
 
-    %         plot(delta(1,1:end),force_array(1,1:end))
-    %         xlabel('delta')
-    %         ylabel('force')
-    %         hold on
+            figure
+            plot(delta(1,1:end),force_array(1,1:end))
+            xlabel('delta')
+            ylabel('force')
+            hold on
     %          plot(delta(2,1:end),force_array(2,1:end),'r')
-            sensitivity_ultimo(contador_diff) = Dy(2*(n_elem-1));
+            if n_elem > 1
+                if (obj_function_number == 1)
+                    sensitivity_ultimo(contador_diff) = Dy(2*(n_elem-1));
+                else
+                    sensitivity_ultimo(contador_diff) = DalphaMax(j);
+                end
+            else
+                if (obj_function_number == 1)
+                    sensitivity_ultimo(contador_diff) = Dy(2);
+                else
+                    sensitivity_ultimo(contador_diff) = DalphaMax(j);
+                end
+                
+            end
 
     %         figure(3)
     %         plot(delta,force_array)
@@ -491,6 +537,7 @@ end
     %         figure(4)
     %         plot(t_array,force_array)
             obj_function
+
             sensitivity(contador_diff) = Dq;
             contador_diff = contador_diff + 1;
         end
@@ -708,9 +755,8 @@ end
         
     end
 
-    function dFdY = TangentdY(delta,alphaMax,k1_array,k2,mass_array,j)
+    function dFdY = TangentdY(delta,alphaMax,k1_elem,k2,mass_array,j)
         
-        k1_elem = k1_array(j);
         alphaP = alphaMax*(k2 - k1_elem)/ k2;
         
         ElasticForce = k2*(delta - alphaP);
@@ -738,9 +784,8 @@ end
         
     end
 
-    function dFdAlphaMax = TangentdAlphaMax(delta,alphaMax,k1_array,k2,mass_array,j)
+    function dFdAlphaMax = TangentdAlphaMax(delta,alphaMax,k1_elem,k2,mass_array,j)
         
-        k1_elem = k1_array(j);
         alphaP = alphaMax*(k2 - k1_elem)/ k2;
         
         ElasticForce = k2*(delta - alphaP);
@@ -765,13 +810,12 @@ end
         
     end
 
-    function dFdP_array = TangentdP(delta,alphaMax,k1_array,k2,mass_array,j,n_elem,deriv_mass,design_array, variable,t)
+    function dFdP_array = TangentdP(delta,alphaMax,k1_elem,k2,mass_array,j)
         
-        k1_elem = k1_array(j);
         
         alphaP = alphaMax*(k2 - k1_elem)/ k2;
         
-        DalphaP = alphaMax/ k2;
+        DalphaP_alphaMax_initial = (k2 - k1_elem)/ k2;
         
         ElasticForce = k2*(delta - alphaP);
         
@@ -781,58 +825,31 @@ end
         
         dFdP = 0;
         
-        ext_force = ForceExt(t);
-        if j ~= 1
-            ext_force = 0;
-        end
         
-        if design_array(j) && j == variable
-            if delta >= alphaP
-                if ElasticForce < PlasticForce - tol
-                   F = ElasticForce;
-                   dFdP = alphaMax*1/2;  
-                else
-                   dFdP = delta*1/2;
-                   F = PlasticForce;
-                   alphaMax = delta;     
-                end      
+        if delta >= alphaP
+            if ElasticForce < PlasticForce - tol
+               dFdP = k2;  
             else
-                dFdP = 0;
-                F = 0;
-            end
-            
-            dFdP_array(1) = (-1.0*(ext_force-F)*deriv_mass/mass_array(j)^2-dFdP* 1/mass_array(j));
-            
-            dFdP_array(2) = dFdP* 1/mass_array(j+1);
-        
+               dFdP = k1_elem;
+               alphaMax = delta;     
+            end      
+        else
+            dFdP = 0;
+            F = 0;
         end
         
-        if design_array(j+1) && j + 1 == variable
-        
-            if delta >= alphaP
-                if ElasticForce < PlasticForce - tol
-                   F = ElasticForce;
-                   dFdP = alphaMax*1/2;  
-                else
-                   dFdP = delta*1/2;
-                   F = PlasticForce;
-                   alphaMax = delta;       
-                end      
-            else
-                dFdP = 0;
-                F = 0;
-            end
-            
-            dFdP_array(1) = -dFdP* 1/mass_array(j);
-            
-            dFdP_array(2) = (-1.0*(F)*deriv_mass/mass_array(j+1)^2+dFdP* 1/mass_array(j+1));
+        dFdP = dFdP * DalphaP_alphaMax_initial;
+
+        dFdP_array(1) = -dFdP* 1/mass_array(j);
+
+        dFdP_array(2) = dFdP* 1/mass_array(j+1);
             
             
         
-        end
+    end
         
          
-    end
+
 
     function dRdY = ObjdY(delta,alphaMax,k1,k2,scale_factor)
         
@@ -878,7 +895,7 @@ end
     end
 
 
-    function [force,plast,int_force] = RHS(delta,alphaMax,k1_array,k2,mass_array,t,j)
+    function [force,plast,int_force] = RHS(delta,alphaMax,k1_elem,k2,mass_array,t,j)
 
         %Call external force
         ext_force = ForceExt(t);
@@ -889,7 +906,6 @@ end
         %Reinitialize to zero, write 1 if plastic regime
         plast = 0;
         %Call internal force
-        k1_elem = k1_array(j);
         [int_force, plast] = ForceInt(delta,alphaMax,k1_elem,k2);
 
 
@@ -901,11 +917,11 @@ end
 
     function ext_force = ForceExt(t)
         
-        
-        if t < 40
+        load_time = 40;
+        if t < load_time
            ext_force = 10*t;
-        elseif t >= 40 && t < 80
-           ext_force = 800 -t*10;
+        elseif t >= load_time && t < 2*load_time
+           ext_force = 2*load_time*10 -t*10;
         else 
            ext_force = 0;
         end
@@ -914,8 +930,7 @@ end
     end
 
     function [int_force,plast] = ForceInt(delta,alphaMax,k1,k2)
-        
-        
+
         alphaP = alphaMax*(k2 - k1)/ k2;
         
         if delta >= alphaP
