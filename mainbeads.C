@@ -85,6 +85,8 @@ int main(int argc,char ** argv)
 
 		ierr = hexabeadsDummy.CheckGradient();
 
+		hexabeadsDummy.ProcessOptimalSolution();
+
 	}
 	else{
 
@@ -134,15 +136,13 @@ int main(int argc,char ** argv)
 		// STEP 7: OPTIMIZATION LOOP
 		  PetscScalar ch = 1.0;
 		  double t1,t2;
-		  while (itr < maxItr && ch > 0.01){
+		  while (itr < maxItr && ch > 1e-6){
 			// Update iteration counter
 			itr++;
 
 			// start timer
 			t1 = MPI_Wtime();
 
-
-			// Filter sensitivities (chainrule)
 			ierr = hexabeadsDummy.OptimizerRoutine();
 
 			PetscScalar * constraint = hexabeadsDummy.get_constraint();
@@ -153,20 +153,43 @@ int main(int argc,char ** argv)
 			// Update design by MMA
 			ierr = mma->Update(design_variables,gradient,constraint,constraint_gradient,Xmin,Xmax); CHKERRQ(ierr);
 
+			// Update the vector alphaMax with the new design
+			hexabeadsDummy.InitialDesignSolution();
+
+
 			// Inf norm on the design change
 			ch = mma->DesignChange(design_variables,Xold);
+
 
 			// stop timer
 			t2 = MPI_Wtime();
 
 			// Print to screen
 			PetscPrintf(PETSC_COMM_WORLD,"It.: %i, obj.: %f, g[0]: %f, ch.: %f, time: %f\n",
-						itr,*ObjFunction,0, ch,t2-t1);
+						itr,*ObjFunction,constraint[0], ch,t2-t1);
+
+
 
 		  }
 
 
 			hexabeadsDummy.ProcessOptimalSolution();
+
+
+			/*
+			 * Print out the final design to MATLAB
+			 */
+			// File name
+			PetscViewer    viewer;
+			std::string filehistory("PostProcessing/OptimalDesign.mat");
+			// Open and set Binary file
+			PetscViewerBinaryOpen(PETSC_COMM_WORLD,filehistory.c_str(),FILE_MODE_WRITE,&viewer);
+			PetscViewerSetFormat(viewer, PETSC_VIEWER_BINARY_MATLAB);
+			// Print
+			VecView(design_variables,viewer);
+			PetscViewerDestroy(&viewer);
+
+			delete mma;
 
 	}
 

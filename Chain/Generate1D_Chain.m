@@ -2,7 +2,7 @@ clear all
 clc
 
 
-N_beads = 8;
+N_beads = 11;
 
 dynamic = 1;
 
@@ -134,7 +134,7 @@ for i=1:NumberofNodes
 end
 fprintf(finE,'%d\n',NumberofElements);
 for i=1:NumberofElements
-    fprintf(finE,'%d\t %d\t %d\t %f\n ', i, Connectivity(i,1),Connectivity(i,2),i);
+    fprintf(finE,'%d\t %d\t %d\t %d\n ', i, Connectivity(i,1),Connectivity(i,2),i);
 end
 
 fprintf(finA,'%d\n',1);

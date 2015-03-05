@@ -12,28 +12,14 @@
 class DesignParameters
 {
 	public:
-		unsigned int SIMP_parameter;
 
-		double volfrac_min;
-
-		double penalty_weight;
-
-		unsigned int  N_ConstrFunc, N_DesignVariables;
+		unsigned int  N_DesignVariables;
 
 		PetscInt N_ObjFunc;
 		// MaxOrMin type: 1 for maximization, 0 for minimization
 		std::vector<unsigned int> MaxOrMin;
 
 		std::vector<std::vector<int> > TargetArea_list;
-
-		// Constraint type: 1 for volume, 2 for SRV
-		std::vector<unsigned int> ConstraintsType;
-
-		// Constraint bund, number of intruders allow
-		std::vector<double> ConstraintsBounds;
-
-		// Equality constraint tolerance, 0 por inequality
-		std::vector<double> ConstraintsTolerance;
 
 		unsigned int SpaceNorm, TimeNorm;
 
@@ -42,6 +28,8 @@ class DesignParameters
 		PetscInt objfunctionType;
 
 		PetscReal initial_design;
+
+		PetscReal xmax, xmin;
 
 		// Print forces in obj function
 		bool printforces;
@@ -58,7 +46,6 @@ class DesignParameters
 				}
 				std::cout<<std::endl;
 			}
-			std::cout<<"Number of constraints = "<<N_ConstrFunc<<std::endl;
 			std::cout<<"Number of design variables = "<<N_DesignVariables<<std::endl;
 		}
 };

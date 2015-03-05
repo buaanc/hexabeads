@@ -22,8 +22,8 @@ nuwall = 0.3;
 % Input number of rows and columns in setup
 n = 3; %number of particles along one edge
 
-D=(3/4)*2.54/100; % 3/4 inch to m
-r=D/2;
+r=0.004763;
+D = 2*r;
 rd=r*(sqrt(2)-1);
 Dd=D*(sqrt(2)-1);
 x=sqrt(3)*r;
@@ -162,8 +162,6 @@ for i=1:n
     Nodes(count,3) = (i-1)*D;
 end
 
-%%% Target area
-target_nodes = (count-n+1):1:count;
 
 %wall5
 for i=1:n
@@ -398,29 +396,22 @@ fclose(IcFile);
 %%%% Target elements
 TargetFile = fopen('input_TargetArea.txt', 'w'); 
 
-TargetElements = zeros(length(target_nodes),1);
-% TargetElements = zeros(length(nelement),1);
-% TargetElements = 1:1:nelement;
-% n_target = nelement;
-count = 1;
-for i=1:nelement
-    if any(Elements(i,2) == target_nodes) || any(Elements(i,3) ==  target_nodes);
-        TargetElements(count) = Elements(i,1);
-        count = count + 1;
-    end
-end
-n_target = length(target_nodes);
+TargetElements = [271, 235];
+n_target = 2;
 
-fprintf(TargetFile,'%d\n',n_target);
 for i=1:n_target
-    fprintf(TargetFile,'%d\t',TargetElements(i));
+    fprintf(TargetFile,'%d\n',1);
+    fprintf(TargetFile,'%d\t \n',TargetElements(i));
 end
 
 
 for k=1:nelement
     x_coord = [Nodes(Elements(k,2),2) Nodes(Elements(k,3),2)];
     y_coord = [Nodes(Elements(k,2),3) Nodes(Elements(k,3),3)];
+    x_mean = mean(x_coord);
+    y_mean = mean(y_coord);
     plot(x_coord,y_coord)
+    text(x_mean,y_mean,num2str(k));
     hold on
 end
 

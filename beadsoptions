@@ -16,22 +16,22 @@
 -ksp_monitor_true_residual 
 -snes_converged_reason 
 -ksp_converged_reason
--size_data hex
+-size_data chain
 -dynamic 1
--reltol 1e-6
--abstol 1e-6
+-reltol 1e-9
+-abstol 1e-9
 #-ts_adapt_type none
 -large_deformations 0
 -objfunction 1
 -loading 1
 -matlabhistory 0
 -alphaMaxInit 0.0
--sensitivities 0
--initial_design 1.5
--printdisplacements 1
+-sensitivities 1
+-initial_design 2.5
+-printdisplacements 0
 -ts_type rk
 #-ts_type euler
 -ts_rk_type 5dp
--peak_load 22
+-peak_load 10
 -loadtime 10
--digits_step 4
+-digits_step 20

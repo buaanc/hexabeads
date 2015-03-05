@@ -107,7 +107,7 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 
   /* Edge Data necessary to know which variable group it belongs to */
   EDGEDATA elementData;
-  PetscInt key, offsetd_eStart;
+  PetscInt offsetd_eStart;
 
 	PetscScalar * alphaMaxInitialarr;
 	VecGetArray(sistema->alphaMaxInitial,&alphaMaxInitialarr);
@@ -230,9 +230,9 @@ PetscErrorCode FormRHSFunction(TS ts,PetscReal t, Vec U, Vec F,void *appctx)
 
    }
 
-#ifdef DEBUG
+//#ifdef DEBUG
    	  std::cout<<"Obj Function RHS = "<<sistema->FunctionValue<<std::endl;
-#endif
+//#endif
 
   ierr = VecRestoreArray(sistema->alphaMax,&alphaMaxarr);CHKERRQ(ierr);
 
@@ -373,7 +373,7 @@ PetscErrorCode MyTSMonitor(TS ts,PetscInt step,PetscReal ptime,Vec U,void *ctx)
 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
-	  PetscInt key, offsetd_eStart;
+	  PetscInt offsetd_eStart;
 
 		PetscScalar * alphaMaxInitialarr;
 		VecGetArray(sistema->alphaMaxInitial,&alphaMaxInitialarr);
@@ -586,6 +586,9 @@ System::System(){
 	designData.printforces = false;
 
 
+	FunctionValueGlobal = 0.0;
+
+
 }
 
 System::~System()
@@ -682,6 +685,13 @@ PetscErrorCode System::OptimizerRoutine(){
 	ierr = ProcessGradient();
 
 	ierr = RestartSolver();
+
+	/*
+	 * Check sensitivities
+	 */
+	ierr = FiniteDifference();
+
+	ierr = CheckGradient();
 
 	return ierr;
 }
@@ -799,6 +809,9 @@ PetscErrorCode System::SetUpStages(){
 
 	  ierr = PetscLogStageRegister("Adjoint problem",&adjointstage);CHKERRQ(ierr);
 
+
+	  ierr = PetscLogStageRegister("Finite Diff",&stage3);CHKERRQ(ierr);
+
 #endif
 	  return ierr;
 
@@ -884,9 +897,7 @@ PetscErrorCode System::SetUpDMNetwork()
 	  /*************************************************************************/
 	  /*            Assigning initial values for the variables                 */
 	  /*************************************************************************/
-	  PetscInt    offsetd;
 	  DMNetworkComponentGenericDataType *arr;
-	  arrayBeads beadsdata;
 	  // We need to loop over the local vertices
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
@@ -922,6 +933,7 @@ PetscErrorCode System::SetUpDMNetwork()
 	  VecDuplicate(alphaMaxInitial,&Xmax);
 
 	  VecDuplicate(alphaMaxInitial,&Xold);
+	  VecCopy(alphaMaxInitial,Xold);
 
 	  VecDuplicate(alphaMaxInitial,&gradient_constraint);
 	  constraint = new PetscScalar[1];
@@ -930,7 +942,7 @@ PetscErrorCode System::SetUpDMNetwork()
 	  VecSet(Xmin,designData.xmin);
 	  VecSet(Xmax,designData.xmax);
 
-	  VecSet(Xmax,1.0);
+	  VecSet(gradient_constraint,1.0);
 
 
 
@@ -1103,7 +1115,7 @@ PetscErrorCode System::SetUpSolver()
 	ierr = TSSetSolution(ts,X);CHKERRQ(ierr);
 
 	/*
-	 * Set initial plastic deformation to initial deformation
+	 * Set initial plastic deformation
 	 */
 	InitialDesignSolution();
 
@@ -1401,18 +1413,18 @@ PetscErrorCode System::Solve()
 PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF,  std::vector<PetscInt> & DesignElements, Vec & alphaMax){
 
 	  PetscErrorCode ierr;
-	  Vec           localU,localDF, localDN;
+	  Vec           localU, localDN;
 	  PetscInt      e;
 	  PetscInt      eStart,eEnd,vfrom,vto;
 	  const PetscScalar *uarr;
 	  PetscScalar U_i_from, U_j_from, U_i_to, U_j_to;
-	  PetscScalar   *farr, *alphaMaxarr, *dnarr, * alphaMaxInitialarr;
+	  PetscScalar   *alphaMaxarr, *dnarr, * alphaMaxInitialarr;
 	  PetscInt      offsetfrom,offsetto;
 	  DMNetworkComponentGenericDataType *arr;
 
 	  arrayBeads beadsdataFrom, beadsdataTo ;
 
-	  PetscReal mass, mass_derivative;
+	  PetscReal mass;
 
 	  /*
 	   * We need to create a copy of the variable vector for the second contribution
@@ -1455,7 +1467,7 @@ PetscErrorCode System::RHSParameterDerivatives(PetscReal & t, Vec &  U, Vec & DF
 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
-	  PetscInt key, offsetd_eStart;
+	  PetscInt  offsetd_eStart;
 
 	  VecGetArray(alphaMax,&alphaMaxarr);
 
@@ -1792,7 +1804,7 @@ PetscErrorCode System::AdjointSolve(){
 
 	/* Edge Data necessary to know which variable group it belongs to */
 	EDGEDATA elementData;
-	PetscInt key, offsetd_eStart;
+	PetscInt offsetd_eStart;
 
 
 
@@ -2574,7 +2586,7 @@ PetscErrorCode System::ProcessGradient() {
 
 	_is_gradient_calculated = true;
 
-	VecAXPY(Mu,1.0,Gamma);
+	ierr = VecAXPY(Mu,1.0,Gamma);CHKERRQ(ierr);
 
 	return ierr;
 
@@ -2659,7 +2671,7 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
-	  PetscInt key, offsetd_eStart;
+	  PetscInt offsetd_eStart;
 
 	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
@@ -2740,10 +2752,6 @@ PetscErrorCode System::CalculateObjFunctionTime_P_Norm(Vec & U, Vec & alphaMax, 
 
 					// Add contribution for this time step
 					FValueTotalElement += PetscPowScalar(F_element_element,SpaceNorm);
-
-//						std::cout<<"F_element_element for element "<<*target<<" = "<<F_element_element<<std::endl;
-//						std::cout<<"FValueTotalElement  "<<*target<<" = "<<FValueTotalElement<<std::endl;
-
 
 				}
 	}
@@ -2855,7 +2863,6 @@ PetscErrorCode System::ProcessObjFunctionTime(){
 	/*
 	 * Grab the objective function from the solution vector in the last time step
 	 */
-	PetscReal FunctionValueFinalStep;
 	Vec localU;
 	const PetscReal * uarr;
 	PetscInt eStart, eEnd, offsetfrom;
@@ -2926,9 +2933,6 @@ PetscErrorCode System::ProcessObjFunctionTime(){
 				CapitalOmega[j] = 0;
 		}
 	}
-
-
-	FunctionValueGlobalBeforePenalty = FunctionValueGlobal;
 
 
 	std::cout<<"FunctionValueGlobal = "<<std::setprecision(20)<<FunctionValueGlobal<<std::endl;
@@ -3050,7 +3054,7 @@ PetscErrorCode System::EvaluatePartialImplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
-	  PetscInt key, offsetd_eStart;
+	  PetscInt offsetd_eStart;
 
 
 	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
@@ -3266,7 +3270,7 @@ PetscErrorCode System::EvaluatePartialExplicitDerivatives_P_Norm(Vec & U, Vec & 
 
 	  /* Edge Data necessary to know which variable group it belongs to */
 	  EDGEDATA elementData;
-	  PetscInt key, offsetd_eStart;
+	  PetscInt offsetd_eStart;
 
 	  VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
 
@@ -3673,7 +3677,6 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  assert(_is_partial_derivatives_calculated && "Need to calculate the derivatives first");
 
 	  // Bead pointer
-	  arrayBeads DesignBead;
 	  DMNetworkComponentGenericDataType *arr;
 
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
@@ -3704,8 +3707,6 @@ PetscErrorCode System::FD_parameter(Vec & U, Vec & alphaMax, PetscInt & NumObjFu
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
 
 			  PetscReal FD_partial_deriv = 0.0;
-			  PetscInt    offsetd,key;
-
 
 			  // Change parameter data, first, keep original value
 			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
@@ -3997,10 +3998,9 @@ PetscErrorCode System::FiniteDifference(){
 	  PetscErrorCode ierr;
 	  PetscScalar * alphaMaxInitialarr;
 
+		start = clock();
 
 #ifdef PETSC_USE_LOG
-	PetscLogStage stage3;
-	ierr = PetscLogStageRegister("Finite Diff",&stage3);CHKERRQ(ierr);
 	PetscLogStagePush(stage3);
 #endif
 
@@ -4009,7 +4009,6 @@ PetscErrorCode System::FiniteDifference(){
 	  Gradient_FD.resize(designData.N_DesignVariables);
 
 	  // Bead pointer
-	  arrayBeads DesignBead;
 	  DMNetworkComponentGenericDataType *arr;
 
 	  ierr = DMNetworkGetComponentDataArray(networkdm,&arr);CHKERRQ(ierr);
@@ -4033,8 +4032,6 @@ PetscErrorCode System::FiniteDifference(){
 	  ierr = DMNetworkGetVertexRange(networkdm,&vStart,&vEnd);CHKERRQ(ierr);
 
 	  for (unsigned int i = 0; i<designData.N_DesignVariables; i++){
-			  PetscInt    offsetd,key;
-
 
 			  // Change parameter data, first, keep original value
 			  ierr = VecGetArray(alphaMaxInitial,&alphaMaxInitialarr);
@@ -4116,6 +4113,11 @@ PetscErrorCode System::FiniteDifference(){
 	PetscLogStagePop();
 #endif
 
+	end = clock();
+
+	totalcputime = ((float)(end - start)) / CLOCKS_PER_SEC ;
+
+	std::cout<<"Finite Difference time = "<<totalcputime<<std::endl;
 
 
 	  return ierr;
@@ -4207,7 +4209,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 			}
 			else if (keyword == "#Objective")  {
 				unsigned int mixmax;
-				for (unsigned int i=0;i<designData.N_ObjFunc;i++) {
+				for (PetscInt i=0;i<designData.N_ObjFunc;i++) {
 					finp >> mixmax;
 					designData.MaxOrMin.push_back(mixmax);
 				}
@@ -4216,21 +4218,6 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 			else if (keyword == "#Norm")  {
 				finp >> designData.SpaceNorm;
 				designData.TimeNorm = designData.SpaceNorm;
-				continue;
-			}
-			else if (keyword == "#NumberOfOptimizationConstraints")  {
-				finp >> designData.N_ConstrFunc;
-				continue;
-			}
-			else if (keyword == "#Constraints")  {
-				PetscReal tolerance;
-				unsigned int consbound, constype;
-				for (unsigned int i=0;i<designData.N_ConstrFunc;i++) {
-					finp >> constype >> consbound >> tolerance;
-					designData.ConstraintsBounds.push_back(consbound);
-					designData.ConstraintsType.push_back(constype);
-					designData.ConstraintsTolerance.push_back(tolerance);
-				}
 				continue;
 			}
 			else if (keyword == "#kkttol")  {
@@ -4312,7 +4299,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 		ierr = PetscMalloc(problemData.N_Elements*sizeof(struct _p_EDGEDATA),&edgeData);
 		problemData.connectivity = new int[2*problemData.N_Elements];
 		unsigned int element_id;
-		PetscReal alpha;
+		PetscInt alpha;
 		for (unsigned int i=0; i<problemData.N_Elements; i++) {
 			finp_elem>>element_id;
 			finp_elem>>problemData.connectivity[2*i];
@@ -4323,7 +4310,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 
 			edgeData[i].VariableGroup = alpha - 1;
 
-			if (design_elements.size() < alpha){
+			if ((PetscInt)design_elements.size() < alpha){
 				std::vector<PetscInt> dummy;
 				design_elements.push_back(dummy);
 				design_elements[alpha - 1].push_back(element_id);
@@ -4339,7 +4326,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 	}
 
 
-	designData.N_DesignVariables = design_elements.size();
+	designData.N_DesignVariables = (unsigned int)design_elements.size();
 
 	/*
 	 * Set the number of variables for the arrays
@@ -4416,7 +4403,7 @@ PetscErrorCode System::ReadBeadsData(arrayBeads & _arrayBeads)
 	designData.TargetArea_list.resize(designData.N_ObjFunc);
 	std::ifstream finp_ta(targetArea.c_str());
 	if (finp_ta.is_open()) {
-		for (unsigned int i = 0;i<designData.N_ObjFunc; i++){
+		for (PetscInt i = 0;i<designData.N_ObjFunc; i++){
 			int N_target_elem;
 			finp_ta>>N_target_elem;
 			designData.TargetArea_list[i].resize(N_target_elem);
@@ -4566,6 +4553,7 @@ PetscErrorCode System::InitialDesignSolution(){
 
 	VecRestoreArray(alphaMaxInitial,&alphaMaxInitialarr);
 
+	return ierr;
 
 
 }

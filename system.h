@@ -195,7 +195,7 @@ class System
 
 	PetscScalar * get_constraint(){
 
-		VecSum(gradient_constraint,&constraint[0]);
+		VecSum(alphaMaxInitial,&constraint[0]);
 
 		constraint[0] -= 1000000;
 		return constraint;
@@ -375,7 +375,7 @@ class System
 	/*
 	 * Objective function value and derivative coefficients
 	 */
-	PetscReal FunctionValue, FunctionValueBeforePnorm, FunctionValueGlobal, FunctionValueGlobalBeforePenalty;\
+	PetscReal FunctionValue, FunctionValueGlobal;
 
 	/*
 	 * Use this FunctionValueGlobalOriginal for the FD;
@@ -419,7 +419,7 @@ class System
 	/*
 	 * PETSc Stages
 	 */
-	PetscLogStage solvestage, adjointstage;
+	PetscLogStage solvestage, adjointstage, stage3;
 
 	/*
 	 * Set up stages

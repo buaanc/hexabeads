@@ -16,9 +16,11 @@ CXXFLAGS = -O3 -pipe -pedantic-errors -Wparentheses -Wreturn-type -Wuninitialize
 
 ifeq ($(METHOD),debug)
 	CXXFLAGS += -g -DDEBUG
+	export LD_LIBRARY_PATH=${PETSC_DIR}/${PETSC_ARCH}/lib:$LD_LIBRARY_PATH
 else
 	CXXFLAGS += -DNDEBUG -DNPETSC_USE_LOG 
 	PETSC_ARCH := linux-mpich-opt
+	export LD_LIBRARY_PATH=${PETSC_DIR}/${PETSC_ARCH}/lib:$LD_LIBRARY_PATH
 endif
 
 ifeq ($(METHOD),verif)
